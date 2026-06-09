@@ -63,6 +63,7 @@ function menuSetup() {
     mappings.appendRow([
       'org-a', false, 'orga@group.calendar.google.com', 'primary',
       DIRECTION.SOURCE_TO_DEST, COPY_MODE.FULL, '[Org A] ', '',
+      false, '',
     ]);
     mappings.autoResizeColumns(1, MAPPING_HEADERS.length);
   }

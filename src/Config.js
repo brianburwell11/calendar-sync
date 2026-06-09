@@ -23,6 +23,7 @@ var SHEET = {
 var MAPPING_HEADERS = [
   'id', 'enabled', 'sourceCalId', 'destCalId',
   'direction', 'copyMode', 'titlePrefix', 'filter',
+  'busyOnly', 'excludeCreators',
 ];
 
 var DIRECTION = {
@@ -82,6 +83,12 @@ function getMappings() {
       m.titlePrefix = String(m.titlePrefix || '');
       m.filter = String(m.filter || '').trim();
       m.enabled = (m.enabled === true || String(m.enabled).trim().toUpperCase() === 'TRUE');
+      m.busyOnly = (m.busyOnly === true || String(m.busyOnly).trim().toUpperCase() === 'TRUE');
+      // Comma-separated list of emails to exclude, normalized to lowercase.
+      m.excludeCreators = String(m.excludeCreators || '')
+        .split(',')
+        .map(function (e) { return e.trim().toLowerCase(); })
+        .filter(function (e) { return e; });
       m._row = i + 2; // 1-based sheet row, for diagnostics
       return m;
     })

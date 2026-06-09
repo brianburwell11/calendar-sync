@@ -55,7 +55,11 @@ min) or when **Run now** is clicked:
    errors). `syncMapping()` lists source changes incrementally and applies them.
 3. **`State.js`** persists, per mapping, the Calendar API **sync token** plus last-run
    metadata in `ScriptProperties`, mirrored to the `State` tab.
-4. **`EventCopy.js`** builds the destination event payload and holds the guard predicates.
+4. **`EventCopy.js`** builds the destination event payload and holds the source-event
+   predicates: `qualifies()` (combines the `filter`, `busyOnly`, and `excludeCreators`
+   mapping options), `isBusy_`, `creatorExcluded_`, and the `isOwnMirror` echo guard. An
+   event that fails `qualifies()` is treated like a deletion (`applyDelete_`), so editing an
+   event out of the qualifying set removes its existing copy on the next run.
 5. **`Log.js`** appends run rows to the `Log` tab.
 6. **`Menu.js`** (`onOpen`) is the in-Sheet control surface; **`Triggers.js`** installs/
    removes the time-driven trigger.

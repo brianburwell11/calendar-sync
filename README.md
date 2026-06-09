@@ -63,6 +63,12 @@ email org members.
 | `copyMode` | `full` (details, no attendees) or `busy` (opaque "Busy" block) |
 | `titlePrefix` | optional prefix on copied titles, e.g. `[Org A] ` |
 | `filter` | optional: only mirror events whose title contains this text |
+| `busyOnly` | `TRUE` = only mirror events that show as busy (skip free/transparent events) |
+| `excludeCreators` | optional comma-separated emails; skip events created or organized by these people |
+
+Filters are evaluated on every sync: if you edit a source event so it stops qualifying
+(e.g. change it from busy to free, or rename it out of the `filter`), its existing copy on
+the destination is removed on the next run.
 
 ## Day-to-day commands
 

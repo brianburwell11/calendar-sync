@@ -49,11 +49,12 @@ function syncMapping(mapping, dryRun) {
     try {
       if (isOwnMirror(src)) return; // echo guard: never mirror a mirror
 
-      if (src.status === 'cancelled') {
+      // Deleted at the source, OR no longer qualifies for this mapping (its
+      // title/busy status/creator changed): ensure no stale copy remains.
+      if (src.status === 'cancelled' || !qualifies(src, mapping)) {
         applyDelete_(mapping, src, dryRun, result);
         return;
       }
-      if (!passesFilter(src, mapping)) return;
 
       applyUpsert_(mapping, src, dryRun, result);
     } catch (e) {

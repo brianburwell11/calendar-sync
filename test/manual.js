@@ -23,6 +23,55 @@ function dryRunMapping(mappingId) {
     ' errors=' + result.errors + (result.note ? ' note=' + result.note : ''));
 }
 
+/**
+ * Diagnose filtering for a mapping. Lists upcoming source events and prints,
+ * for each, the creator/organizer emails, busy status, and whether it would be
+ * mirrored or skipped (and why). Use this to find the exact email string to put
+ * in the excludeCreators column. Reads only — writes nothing, touches no token.
+ *
+ * @param {string} mappingId
+ */
+function inspectMapping(mappingId) {
+  var mapping = findMapping_(mappingId);
+  if (!mapping) {
+    console.log('No mapping with id "' + mappingId + '".');
+    return;
+  }
+  console.log('Mapping "' + mapping.id + '" parsed filters:');
+  console.log('  filter="' + mapping.filter + '"  busyOnly=' + mapping.busyOnly +
+    '  excludeCreators=' + JSON.stringify(mapping.excludeCreators));
+  if (!mapping.excludeCreators.length) {
+    console.log('  NOTE: excludeCreators is empty. Check that the Mappings tab has a ' +
+      'header spelled exactly "excludeCreators" with comma-separated emails.');
+  }
+
+  var now = new Date();
+  var resp = Calendar.Events.list(mapping.sourceCalId, {
+    timeMin: now.toISOString(),
+    timeMax: new Date(now.getTime() + 30 * 86400000).toISOString(),
+    singleEvents: true,
+    orderBy: 'startTime',
+    showDeleted: false,
+    maxResults: 50,
+  });
+  var items = resp.items || [];
+  console.log('--- ' + items.length + ' upcoming event(s) ---');
+  items.forEach(function (src) {
+    var creator = (src.creator && src.creator.email) || '(none)';
+    var organizer = (src.organizer && src.organizer.email) || '(none)';
+    var reasons = [];
+    if (isOwnMirror(src)) reasons.push('ownMirror');
+    if (!passesTitleFilter_(src, mapping)) reasons.push('title');
+    if (mapping.busyOnly && !isBusy_(src)) reasons.push('free');
+    if (creatorExcluded_(src, mapping)) reasons.push('excludedCreator');
+    var verdict = reasons.length ? 'SKIP' : 'MIRROR';
+    console.log(verdict + ' | "' + (src.summary || '(no title)') + '"' +
+      ' | creator=' + creator + ' organizer=' + organizer +
+      ' | transp=' + (src.transparency || 'opaque') +
+      (reasons.length ? ' | skip=' + reasons.join(',') : ''));
+  });
+}
+
 /** Dry-run every enabled mapping. */
 function dryRunAll() {
   getMappings().forEach(function (m) {
