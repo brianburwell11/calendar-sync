@@ -1,0 +1,15 @@
+{
+  "scriptId": "REPLACE_WITH_YOUR_SCRIPT_ID",
+  "rootDir": ".",
+  "filePushOrder": [
+    "appsscript.json",
+    "src/Config.js",
+    "src/State.js",
+    "src/Log.js",
+    "src/EventCopy.js",
+    "src/Sync.js",
+    "src/Triggers.js",
+    "src/Menu.js",
+    "test/manual.js"
+  ]
+}
