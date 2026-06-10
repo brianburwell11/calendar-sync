@@ -109,19 +109,18 @@ function menuSetup() {
   var mappings = ss.getSheetByName(SHEET.MAPPINGS) || ss.insertSheet(SHEET.MAPPINGS);
   if (mappings.getLastRow() === 0) {
     mappings.getRange(1, 1, 1, MAPPING_HEADERS.length).setValues([MAPPING_HEADERS]);
-    // sourceCalId (col D) / destCalId (col F) look the chosen names up in
-    // CalendarIds. Editing the Source/Destination names refills the ids.
+    // sourceCalId / destCalId are left blank here; applyMappingsLayout_ fills the
+    // whole column with the VLOOKUP that resolves the chosen Source/Destination.
     mappings.appendRow([
       'org-a', false,
-      'primary', lookupIdFormula_('C'),
-      'primary', lookupIdFormula_('E'),
+      'primary', '',
+      'primary', '',
       DIRECTION.SOURCE_TO_DEST, COPY_MODE.FULL, '[Org A] ', '',
       '', false, '',
     ]);
     styleTab_(mappings, MAPPING_HEADERS.length);
-    applyCalendarNameValidation_(mappings, calSheet);
+    applyMappingsLayout_(mappings, calSheet);
     applyDisabledRowFormat_(mappings);
-    mappings.autoResizeColumns(1, MAPPING_HEADERS.length);
   }
 
   // Ensure State and Log tabs exist (headers are written lazily on first use).
@@ -138,28 +137,84 @@ function menuSetup() {
 }
 
 /**
- * VLOOKUP that resolves a calendar name in the given Mappings column (a letter
- * like "C") to its id from the CalendarIds tab. Row 2 is relative so it fills
- * down. Returns "" when the name isn't found, which the engine treats as "skip".
+ * Per-column pixel widths for the Mappings tab (1-based column → px), matching
+ * the reference workbook. Column 12 (busyOnly) is intentionally absent so it
+ * keeps the default width.
  */
-function lookupIdFormula_(nameColLetter) {
-  return '=IFERROR(VLOOKUP($' + nameColLetter + '2,' + SHEET.CALENDAR_IDS +
-    '!$A:$B,2,FALSE),"")';
-}
+var MAPPING_COL_WIDTHS = {
+  1: 102, 2: 57, 3: 183, 4: 134, 5: 134, 6: 116,
+  7: 111, 8: 72, 9: 100, 10: 83, 11: 74, 13: 131,
+};
+
+/** Notes shown on the Mappings header cells (1-based column → text). */
+var MAPPING_HEADER_NOTES = {
+  1: 'unique identifier for this sync rule',
+  2: 'whether or not to run this sync rule',
+  6: 'primary = main calendar',
+  7: 'source_to_dest',
+  8: 'full (details, no attendees) or busy (opaque "Busy" block)',
+  9: 'optional prefix on copied titles',
+  11: 'optional: only copy events whose title contain this text',
+};
 
 /**
- * Attach a dropdown of calendar names (from CalendarIds) to the Source and
- * Destination columns of the Mappings tab. Invalid values are allowed so power
- * users can still type a raw id or the "primary" keyword.
+ * Lay out the Mappings tab like the reference workbook: column widths, hidden
+ * VLOOKUP id columns, checkboxes on the boolean columns, dropdowns (calendar
+ * names for Source/Destination, fixed lists for direction/copyMode), and the
+ * header-cell notes.
  */
-function applyCalendarNameValidation_(mappingsSheet, calSheet) {
-  var names = calSheet.getRange(2, 1, Math.max(calSheet.getLastRow() - 1, 1), 1);
-  var rule = SpreadsheetApp.newDataValidation()
-    .requireValueInRange(names, true)
-    .setAllowInvalid(true)
+function applyMappingsLayout_(mappingsSheet, calSheet) {
+  var LAST = 1000;
+
+  // Fill the id columns with the VLOOKUP that resolves the name in the cell to
+  // their left (Source for sourceCalId, Destination for destCalId) against
+  // CalendarIds. One relative R1C1 formula per column fills every data row, so
+  // any mapping you add later resolves automatically. Returns "" if not found.
+  var lookup = function (nameCol) {
+    return '=IFERROR(VLOOKUP(RC' + nameCol + ',' + SHEET.CALENDAR_IDS +
+      '!C1:C2,2,FALSE),"")';
+  };
+  mappingsSheet.getRange(2, 4, LAST - 1, 1).setFormulaR1C1(lookup(3)); // sourceCalId ← Source
+  mappingsSheet.getRange(2, 6, LAST - 1, 1).setFormulaR1C1(lookup(5)); // destCalId ← Destination
+
+  // Column widths (column 12 keeps the default).
+  Object.keys(MAPPING_COL_WIDTHS).forEach(function (col) {
+    mappingsSheet.setColumnWidth(Number(col), MAPPING_COL_WIDTHS[col]);
+  });
+
+  // Hide the VLOOKUP id columns — only the friendly names are meant to show.
+  mappingsSheet.hideColumns(4); // sourceCalId
+  mappingsSheet.hideColumns(6); // destCalId
+
+  // Checkboxes on the boolean columns.
+  mappingsSheet.getRange(2, 2, LAST, 1).insertCheckboxes();  // enabled
+  mappingsSheet.getRange(2, 12, LAST, 1).insertCheckboxes(); // busyOnly
+
+  // Dropdowns (render as chips; invalid entries rejected). Source/Destination
+  // pull names from CalendarIds; direction/copyMode are fixed lists.
+  var nameRule = SpreadsheetApp.newDataValidation()
+    .requireValueInRange(calSheet.getRange(1, 1, calSheet.getMaxRows(), 1), true)
+    .setAllowInvalid(false)
     .build();
-  mappingsSheet.getRange(2, 3, 1000, 1).setDataValidation(rule); // Source
-  mappingsSheet.getRange(2, 5, 1000, 1).setDataValidation(rule); // Destination
+  mappingsSheet.getRange(2, 3, LAST, 1).setDataValidation(nameRule); // Source
+  mappingsSheet.getRange(2, 5, LAST, 1).setDataValidation(nameRule); // Destination
+
+  var directionRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList([DIRECTION.SOURCE_TO_DEST], true)
+    .setAllowInvalid(false)
+    .build();
+  mappingsSheet.getRange(2, 7, LAST, 1).setDataValidation(directionRule);
+
+  var copyModeRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList([COPY_MODE.FULL, COPY_MODE.BUSY], true)
+    .setAllowInvalid(false)
+    .build();
+  mappingsSheet.getRange(2, 8, LAST, 1).setDataValidation(copyModeRule);
+
+  // Header-cell notes.
+  Object.keys(MAPPING_HEADER_NOTES).forEach(function (col) {
+    mappingsSheet.getRange(1, Number(col)).setNote(MAPPING_HEADER_NOTES[col]);
+  });
 }
 
 /**

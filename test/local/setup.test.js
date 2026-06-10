@@ -40,16 +40,41 @@ test('menuSetup creates a CalendarIds tab with a primary alias row', () => {
   assert.deepEqual(sheet.data[1], ['primary', 'primary']);
 });
 
-test('seeded sample row resolves ids by VLOOKUP against CalendarIds', () => {
+test('the id columns are filled with VLOOKUP formulas down the whole tab', () => {
   const env = makeEnv();
   const g = loadGas(env.globals);
   g.menuSetup();
-  const row = env.ss.ss.getSheetByName('Mappings').data[1];
+  const sheet = env.ss.ss.getSheetByName('Mappings');
   const headers = g.MAPPING_HEADERS;
-  // Source/Destination hold names; the id columns hold lookup formulas.
-  assert.equal(row[headers.indexOf('Source')], 'primary');
-  assert.match(row[headers.indexOf('sourceCalId')], /^=IFERROR\(VLOOKUP\(\$C2,CalendarIds/);
-  assert.match(row[headers.indexOf('destCalId')], /^=IFERROR\(VLOOKUP\(\$E2,CalendarIds/);
+  const srcCol = headers.indexOf('sourceCalId'); // 0-based
+  const dstCol = headers.indexOf('destCalId');
+  // Sample row (row 2) holds names; the id columns hold lookup formulas.
+  assert.equal(sheet.data[1][headers.indexOf('Source')], 'primary');
+  assert.match(sheet.data[1][srcCol], /^=IFERROR\(VLOOKUP\(RC3,CalendarIds!C1:C2/);
+  assert.match(sheet.data[1][dstCol], /^=IFERROR\(VLOOKUP\(RC5,CalendarIds!C1:C2/);
+  // The formula is filled far down the column, not just the sample row.
+  assert.match(sheet.data[499][srcCol], /^=IFERROR\(VLOOKUP\(RC3,CalendarIds/); // row 500
+  assert.match(sheet.data[999][dstCol], /^=IFERROR\(VLOOKUP\(RC5,CalendarIds/); // row 1000
+});
+
+test('menuSetup lays out the Mappings tab: hidden id columns, checkboxes, widths, notes', () => {
+  const env = makeEnv();
+  const g = loadGas(env.globals);
+  g.menuSetup();
+  const m = env.ss.ss.getSheetByName('Mappings');
+  // VLOOKUP id columns (D=4 sourceCalId, F=6 destCalId) are hidden.
+  assert.ok(m._hiddenColumns.includes(4));
+  assert.ok(m._hiddenColumns.includes(6));
+  // Checkboxes on enabled (B=2) and busyOnly (L=12).
+  assert.ok(m._checkboxCols.includes(2));
+  assert.ok(m._checkboxCols.includes(12));
+  // Representative column widths from the reference workbook.
+  assert.equal(m._colWidths[3], 183);  // Source
+  assert.equal(m._colWidths[2], 57);   // enabled
+  assert.equal(m._colWidths[12], undefined); // busyOnly keeps default width
+  // Header-cell notes.
+  assert.equal(m._notes['1,1'], 'unique identifier for this sync rule');
+  assert.equal(m._notes['1,6'], 'primary = main calendar');
 });
 
 test('menuSetup adds a conditional-format rule to grey out disabled rows', () => {

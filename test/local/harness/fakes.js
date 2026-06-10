@@ -147,6 +147,10 @@ function makeFakeCalendar() {
 function makeFakeSheet(name) {
   const data = []; // data[r-1][c-1]
   let condRules = [];
+  const colWidths = {};   // col -> px
+  const hiddenCols = [];  // 1-based column indexes hidden
+  const checkboxCols = []; // columns where checkboxes were inserted
+  const notes = {};       // 'r,c' -> note text
   const sheet = {
     name: name,
     data: data,
@@ -180,6 +184,19 @@ function makeFakeSheet(name) {
     getMaxRows: function () { return Math.max(data.length, 1000); },
     getConditionalFormatRules: function () { return condRules.slice(); },
     setConditionalFormatRules: function (r) { condRules = r.slice(); return sheet; },
+    setColumnWidth: function (c, w) { colWidths[c] = w; return sheet; },
+    hideColumns: function (c, n) {
+      const k = n || 1;
+      for (let i = 0; i < k; i++) hiddenCols.push(c + i);
+      return sheet;
+    },
+    _addCheckboxes: function (c) { checkboxCols.push(c); },
+    _setNote: function (r, c, t) { notes[r + ',' + c] = t; },
+    // Test-only accessors:
+    _colWidths: colWidths,
+    _hiddenColumns: hiddenCols,
+    _checkboxCols: checkboxCols,
+    _notes: notes,
   };
   return sheet;
 }
@@ -192,7 +209,14 @@ function makeFakeRange(sheet, row, col, numRows, numCols) {
       return range;
     },
     setValue: function (v) { sheet._set(row, col, v); return range; },
+    setFormulaR1C1: function (f) {
+      for (let r = 0; r < numRows; r++)
+        for (let c = 0; c < numCols; c++) sheet._set(row + r, col + c, f);
+      return range;
+    },
     setDataValidation: function () { return range; },
+    setNote: function (t) { sheet._setNote(row, col, t); return range; },
+    insertCheckboxes: function () { sheet._addCheckboxes(col); return range; },
     setFontFamily: function () { return range; },
     setBackground: function () { return range; },
     getBandings: function () { return []; },
@@ -240,6 +264,7 @@ function makeFakeSpreadsheet(initialSheets) {
     newDataValidation: function () {
       const b = {
         requireValueInRange: function () { return b; },
+        requireValueInList: function () { return b; },
         setAllowInvalid: function () { return b; },
         build: function () { return {}; },
       };
