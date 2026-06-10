@@ -40,15 +40,16 @@ function resetSyncToken(mappingId) {
  */
 function recordRun(mappingId, result) {
   var p = props_();
-  var nowIso = new Date().toISOString();
-  p.setProperty(stateKey_(mappingId, 'lastRunISO'), nowIso);
+  var now = new Date();
+  // The property stays an ISO string (machine state); the Sheet gets a real Date.
+  p.setProperty(stateKey_(mappingId, 'lastRunISO'), now.toISOString());
   p.setProperty(stateKey_(mappingId, 'lastResult'), JSON.stringify(result));
 
-  writeStateRow_(mappingId, nowIso, result);
+  writeStateRow_(mappingId, now, result);
 }
 
-/** Upsert one row per mapping into the State tab. */
-function writeStateRow_(mappingId, nowIso, result) {
+/** Upsert one row per mapping into the State tab. `now` is a real Date value. */
+function writeStateRow_(mappingId, now, result) {
   var ss = getSpreadsheet_();
   var sheet = ss.getSheetByName(SHEET.STATE) || ss.insertSheet(SHEET.STATE);
   var headers = ['mappingId', 'hasSyncToken', 'lastRun', 'created', 'updated', 'deleted', 'errors', 'note'];
@@ -61,7 +62,7 @@ function writeStateRow_(mappingId, nowIso, result) {
   var rowValues = [
     mappingId,
     !!getSyncToken(mappingId),
-    nowIso,
+    now,
     result.created || 0,
     result.updated || 0,
     result.deleted || 0,

@@ -18,7 +18,9 @@ function logRow(level, mappingId, message) {
         .setFontWeight('bold');
       sheet.setFrozenRows(1);
     }
-    sheet.appendRow([new Date().toISOString(), level, mappingId || '', message || '']);
+    // A real Date (not an ISO string) so Sheets stores a native datetime value
+    // — sortable, filterable, and shown in the spreadsheet's timezone/locale.
+    sheet.appendRow([new Date(), level, mappingId || '', message || '']);
   } catch (e) {
     // Logging must never break a sync run.
     console.error('logRow failed: ' + e);
