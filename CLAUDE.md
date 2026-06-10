@@ -24,10 +24,26 @@ npx clasp logs         # tail execution logs
 `.clasp.json` (git-ignored) binds the repo to a script id; see `.clasp.json.example` and
 the README for first-time project creation (`clasp create --type sheets --parentId <SHEET_ID>`).
 
-There is **no local build, lint, or test runner** — Apps Script runs only in Google's
-environment. "Tests" are manual functions in `test/manual.js` run from the editor:
-`dryRunMapping("<id>")` previews a mapping's create/update/delete counts without writing or
-consuming its sync token; `listMyCalendars()` prints calendar ids.
+### Tests
+
+```bash
+npm test               # node --test over test/local/**/*.test.js (offline, no auth)
+```
+
+Layer 1 is a local Node suite (`test/local/`) that loads the **real, unmodified**
+`src/*.js` into a `vm` context with in-memory fakes for `Calendar`, `SpreadsheetApp`,
+`PropertiesService`, and `ScriptApp` — see `test/local/harness/{load,fakes}.js`. This is
+possible only because Apps Script files share one global scope and use no import/require, so
+the engine's real logic (sync-token deltas, upsert-by-stamp, deletes, echo guard, filters)
+is exercised without Google's runtime. **No production code is modified for tests.** The
+Calendar fake models incremental sync tokens (a per-calendar version cursor),
+cancelled tombstones, `privateExtendedProperty` filtering, pagination, and one-shot 410
+expiry. When adding behavior, add a case here.
+
+`test/manual.js` is separate — it's pushed to Apps Script (`.claspignore` keeps
+`test/local/` out) and holds editor-run helpers: `dryRunMapping("<id>")`,
+`inspectMapping("<id>")`, `listMyCalendars()`. A future Layer 2 would add an in-GAS smoke
+test against a throwaway calendar for real-API confidence.
 
 ## Runtime model (important, non-obvious)
 

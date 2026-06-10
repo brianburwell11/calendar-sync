@@ -1,0 +1,7 @@
+# Only these are pushed to Apps Script. Everything else (Node tests under
+# test/local/, package.json, docs, node_modules) stays local.
+**/**
+
+!appsscript.json
+!src/*.js
+!test/manual.js

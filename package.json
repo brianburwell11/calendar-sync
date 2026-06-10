@@ -4,6 +4,7 @@
   "private": true,
   "description": "Mirror events from multiple Google org calendars into one main calendar (Google Apps Script + Sheet config).",
   "scripts": {
+    "test": "node --test \"test/local/**/*.test.js\"",
     "push": "clasp push",
     "pull": "clasp pull",
     "open": "clasp open",

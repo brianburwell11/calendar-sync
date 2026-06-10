@@ -80,7 +80,18 @@ npx clasp open      # open the script editor in a browser
 npx clasp logs      # tail execution logs
 ```
 
-## Verifying a change
+## Tests
+
+```bash
+npm test    # offline Node suite — no Google auth required
+```
+
+The suite in `test/local/` loads the real `src/*.js` into a sandbox with in-memory fakes
+for the Google services, so it exercises the actual sync logic (incremental tokens,
+create/update/delete, echo guard, filters) without touching any calendar. These files are
+Node-only and are never pushed to Apps Script (`.claspignore`).
+
+## Verifying a change against real calendars
 
 Run `dryRunMapping("<id>")` from the editor to preview create/update/delete counts without
 writing anything. Then exercise create → update → delete on a source event and click
