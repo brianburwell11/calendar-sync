@@ -23,7 +23,7 @@ var SHEET = {
 var MAPPING_HEADERS = [
   'id', 'enabled', 'sourceCalId', 'destCalId',
   'direction', 'copyMode', 'titlePrefix', 'filter',
-  'busyOnly', 'excludeCreators',
+  'busyOnly', 'excludeCreators', 'overrideTitle',
 ];
 
 var DIRECTION = {
@@ -81,6 +81,8 @@ function getMappings() {
       m.direction = String(m.direction || DIRECTION.SOURCE_TO_DEST).trim();
       m.copyMode = String(m.copyMode || COPY_MODE.FULL).trim().toLowerCase();
       m.titlePrefix = String(m.titlePrefix || '');
+      // When set, replaces every mirrored event's title (the source title is ignored).
+      m.overrideTitle = String(m.overrideTitle || '');
       m.filter = String(m.filter || '').trim();
       m.enabled = (m.enabled === true || String(m.enabled).trim().toUpperCase() === 'TRUE');
       m.busyOnly = (m.busyOnly === true || String(m.busyOnly).trim().toUpperCase() === 'TRUE');

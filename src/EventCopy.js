@@ -25,10 +25,11 @@ function buildCopyResource(src, mapping) {
   };
 
   if (isBusy) {
-    resource.summary = 'Busy';
+    resource.summary = mapping.overrideTitle || 'Busy';
     resource.visibility = 'private';
   } else {
-    resource.summary = (mapping.titlePrefix || '') + (src.summary || '(no title)');
+    var baseTitle = mapping.overrideTitle || src.summary || '(no title)';
+    resource.summary = (mapping.titlePrefix || '') + baseTitle;
     if (src.description) resource.description = src.description;
     if (src.location) resource.location = src.location;
   }

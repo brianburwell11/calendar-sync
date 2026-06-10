@@ -62,7 +62,8 @@ email org members.
 | `direction` | `source_to_dest` (only one implemented) |
 | `copyMode` | `full` (details, no attendees) or `busy` (opaque "Busy" block) |
 | `titlePrefix` | optional prefix on copied titles, e.g. `[Org A] ` |
-| `filter` | optional: only mirror events whose title contains this text |
+| `overrideTitle` | optional: if set, replaces every mirrored title with this text (source title ignored); `titlePrefix` still applies |
+| `filter` | optional: only mirror events whose title contains this text (matches the *source* title, even when overridden) |
 | `busyOnly` | `TRUE` = only mirror events that show as busy (skip free/transparent events) |
 | `excludeCreators` | optional comma-separated emails; skip events created or organized by these people |
 
