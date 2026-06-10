@@ -14,9 +14,8 @@ function logRow(level, mappingId, message) {
     var sheet = ss.getSheetByName(SHEET.LOG) || ss.insertSheet(SHEET.LOG);
     if (sheet.getLastRow() === 0) {
       sheet.getRange(1, 1, 1, 4)
-        .setValues([['timestamp', 'level', 'mappingId', 'message']])
-        .setFontWeight('bold');
-      sheet.setFrozenRows(1);
+        .setValues([['timestamp', 'level', 'mappingId', 'message']]);
+      styleTab_(sheet, 4);
     }
     // A real Date (not an ISO string) so Sheets stores a native datetime value
     // — sortable, filterable, and shown in the spreadsheet's timezone/locale.

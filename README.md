@@ -90,15 +90,19 @@ In the Apps Script editor (left sidebar, under **Files**):
    script, you may see an "unverified app" warning — click **Advanced → Go to … (unsafe)**
    to continue. (It's "unsafe" only because Google hasn't reviewed your personal script; the
    code never emails anyone or shares data.)
-4. This creates the **`Mappings`**, **`State`**, and **`Log`** tabs plus one sample row.
+4. This creates the **`Mappings`**, **`State`**, **`Log`**, and **`CalendarIds`** tabs plus
+   one sample row. `CalendarIds` is filled with all your calendars automatically — if it's
+   empty (Google may have asked for calendar access only just now), click
+   **Calendar Sync → Refresh calendar list**.
 
 ### Step 7 — Configure your sync
 
-1. Fill in the **`Mappings`** tab (columns explained below). Use **`primary`** as
-   `destCalId` for your main calendar.
-   - To find a calendar's id: run **`listMyCalendars`** from the editor (pick it in the
-     function dropdown and click **Run**), or open the calendar's **Settings** page in
-     Google Calendar and copy the *Calendar ID*.
+1. In the **`Mappings`** tab, fill in the sample row (columns explained below):
+   - **`Source`** — pick the calendar to mirror **from** using the dropdown (the names come
+     from the `CalendarIds` tab). The **`sourceCalId`** column fills in automatically.
+   - **`Destination`** — pick the calendar to mirror **to**; use **`primary`** for your main
+     calendar. **`destCalId`** fills in automatically.
+   - You never need to find or paste calendar ids — picking the **name** is enough.
 2. Set **`enabled` = `TRUE`** on the rows you want to sync.
 3. Click **Calendar Sync → Run now** for the first sync.
 4. Click **Calendar Sync → Install schedule** to start the automatic recurring sync.
@@ -138,9 +142,11 @@ If you have Node.js installed and prefer command-line workflow, you can push the
 | Column | Meaning |
 |---|---|
 | `id` | stable short id, e.g. `org-a` |
-| `enabled` | `TRUE`/`FALSE` |
-| `sourceCalId` | org calendar id to mirror from |
-| `destCalId` | destination calendar id (`primary` = your main) |
+| `enabled` | `TRUE`/`FALSE` — disabled (`FALSE`) rows are greyed out and struck through |
+| `Source` | the calendar to mirror **from**, picked **by name** from the dropdown (the names come from the `CalendarIds` tab) |
+| `sourceCalId` | **auto-filled** — a `VLOOKUP` that resolves the `Source` name to its calendar id; don't edit by hand |
+| `Destination` | the calendar to mirror **to**, picked by name (use `primary` for your main calendar) |
+| `destCalId` | **auto-filled** — `VLOOKUP` of the `Destination` name to its id |
 | `direction` | `source_to_dest` (only one implemented) |
 | `copyMode` | `full` (details, no attendees) or `busy` (opaque "Busy" block) |
 | `titlePrefix` | optional prefix on copied titles, e.g. `[Org A] ` |
@@ -152,6 +158,18 @@ If you have Node.js installed and prefer command-line workflow, you can push the
 Filters are evaluated on every sync: if you edit a source event so it stops qualifying
 (e.g. change it from busy to free, or rename it out of the `filter`), its existing copy on
 the destination is removed on the next run.
+
+### The CalendarIds tab (pick calendars by name)
+
+So you never have to find or paste long calendar ids, **Setup** also creates a `CalendarIds`
+tab listing every calendar your account can see as **name → id** (plus a `primary` row for
+your main calendar). The `Source` and `Destination` columns on `Mappings` are dropdowns of
+those names; the `sourceCalId` / `destCalId` columns are `VLOOKUP` formulas that fill in the
+matching id automatically.
+
+If you add or rename a calendar later, click **Calendar Sync → Refresh calendar list** to
+rebuild the tab. (Power users can still type a raw id or `primary` straight into the
+`Source`/`Destination` cells — invalid dropdown values are allowed.)
 
 ## Day-to-day commands
 

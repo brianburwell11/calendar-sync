@@ -17,14 +17,26 @@ var SHEET = {
   MAPPINGS: 'Mappings',
   STATE: 'State',
   LOG: 'Log',
+  CALENDAR_IDS: 'CalendarIds',
 };
 
-/** Expected header order on the Mappings tab. */
+/**
+ * Expected headers on the Mappings tab. `Source`/`Destination` are
+ * human-friendly calendar-name pickers; `sourceCalId`/`destCalId` are normally
+ * VLOOKUP formulas that resolve those names against the `CalendarIds` tab. The
+ * engine reads the resolved ids, so it doesn't care whether they were typed or
+ * looked up. Order is not significant — getMappings() keys by header name.
+ */
 var MAPPING_HEADERS = [
-  'id', 'enabled', 'sourceCalId', 'destCalId',
-  'direction', 'copyMode', 'titlePrefix', 'filter',
-  'busyOnly', 'excludeCreators', 'overrideTitle',
+  'id', 'enabled',
+  'Source', 'sourceCalId',
+  'Destination', 'destCalId',
+  'direction', 'copyMode', 'titlePrefix', 'overrideTitle', 'filter',
+  'busyOnly', 'excludeCreators',
 ];
+
+/** Headers on the CalendarIds lookup tab (name → id). */
+var CALENDAR_IDS_HEADERS = ['name', 'calendarId'];
 
 var DIRECTION = {
   SOURCE_TO_DEST: 'source_to_dest', // implemented (mirror in)
@@ -44,6 +56,26 @@ var SYNC_WINDOW = {
 
 /** Default trigger cadence, in minutes. */
 var TRIGGER_EVERY_MINUTES = 5;
+
+/**
+ * Apply the shared workbook look to a freshly-populated tab: Montserrat font
+ * throughout, a bold header row, and light-grey alternating row colors (header
+ * #BDBDBD, stripes #FFFFFF / #F3F3F3 — Google's LIGHT_GREY banding theme).
+ * Safe to re-run: existing banding is cleared first.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
+ * @param {number} numCols how many columns the tab uses.
+ */
+function styleTab_(sheet, numCols) {
+  var all = sheet.getRange(1, 1, sheet.getMaxRows(), numCols);
+  all.setFontFamily('Montserrat');
+
+  all.getBandings().forEach(function (b) { b.remove(); });
+  all.applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false);
+
+  sheet.getRange(1, 1, 1, numCols).setFontWeight('bold');
+  sheet.setFrozenRows(1);
+}
 
 /** @return {GoogleAppsScript.Spreadsheet.Spreadsheet} the bound spreadsheet. */
 function getSpreadsheet_() {
@@ -95,4 +127,36 @@ function getMappings() {
       return m;
     })
     .filter(function (m) { return m.id && m.sourceCalId && m.destCalId; });
+}
+
+/**
+ * (Re)build the CalendarIds tab — one row per calendar the authorized account
+ * can see, as `name` then `calendarId` — so the Mappings tab can pick calendars
+ * by name (via VLOOKUP) instead of pasting raw ids. A `primary` alias row is
+ * always written first so mappings can target the main calendar by that keyword.
+ * The whole tab is rewritten so renamed/removed calendars don't linger.
+ *
+ * @return {number} how many calendars were listed (excludes the primary alias).
+ */
+function refreshCalendarIds() {
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName(SHEET.CALENDAR_IDS) || ss.insertSheet(SHEET.CALENDAR_IDS);
+
+  var items = (Calendar.CalendarList.list({ maxResults: 250 }).items) || [];
+  items.sort(function (a, b) {
+    return String(a.summary || a.id).toLowerCase()
+      .localeCompare(String(b.summary || b.id).toLowerCase());
+  });
+
+  var rows = [CALENDAR_IDS_HEADERS, ['primary', 'primary']];
+  items.forEach(function (c) {
+    if (c.primary) return; // already represented by the 'primary' alias
+    rows.push([c.summary || c.id, c.id]);
+  });
+
+  sheet.clear();
+  sheet.getRange(1, 1, rows.length, 2).setValues(rows);
+  styleTab_(sheet, 2);
+  sheet.autoResizeColumns(1, 2);
+  return rows.length - 2; // exclude the header and the 'primary' alias row
 }

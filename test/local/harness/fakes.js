@@ -146,6 +146,7 @@ function makeFakeCalendar() {
 // ---------------------------------------------------------------------------
 function makeFakeSheet(name) {
   const data = []; // data[r-1][c-1]
+  let condRules = [];
   const sheet = {
     name: name,
     data: data,
@@ -175,6 +176,10 @@ function makeFakeSheet(name) {
     },
     setFrozenRows: function () { return sheet; },
     autoResizeColumns: function () { return sheet; },
+    clear: function () { data.length = 0; return sheet; },
+    getMaxRows: function () { return Math.max(data.length, 1000); },
+    getConditionalFormatRules: function () { return condRules.slice(); },
+    setConditionalFormatRules: function (r) { condRules = r.slice(); return sheet; },
   };
   return sheet;
 }
@@ -187,6 +192,11 @@ function makeFakeRange(sheet, row, col, numRows, numCols) {
       return range;
     },
     setValue: function (v) { sheet._set(row, col, v); return range; },
+    setDataValidation: function () { return range; },
+    setFontFamily: function () { return range; },
+    setBackground: function () { return range; },
+    getBandings: function () { return []; },
+    applyRowBanding: function () { return { remove: function () {} }; },
     getValues: function () {
       const out = [];
       for (let r = 0; r < numRows; r++) {
@@ -227,6 +237,28 @@ function makeFakeSpreadsheet(initialSheets) {
   const SpreadsheetApp = {
     getActive: function () { return ss; },
     getUi: function () { return ui; },
+    newDataValidation: function () {
+      const b = {
+        requireValueInRange: function () { return b; },
+        setAllowInvalid: function () { return b; },
+        build: function () { return {}; },
+      };
+      return b;
+    },
+    BandingTheme: { LIGHT_GREY: 'LIGHT_GREY' },
+    newConditionalFormatRule: function () {
+      const b = {
+        whenFormulaSatisfied: function () { return b; },
+        setStrikethrough: function () { return b; },
+        setFontColor: function () { return b; },
+        setBold: function () { return b; },
+        setItalic: function () { return b; },
+        setBackground: function () { return b; },
+        setRanges: function () { return b; },
+        build: function () { return {}; },
+      };
+      return b;
+    },
   };
   return { SpreadsheetApp: SpreadsheetApp, ss: ss, sheets: sheets };
 }

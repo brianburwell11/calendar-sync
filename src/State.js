@@ -55,8 +55,8 @@ function writeStateRow_(mappingId, now, result) {
   var headers = ['mappingId', 'hasSyncToken', 'lastRun', 'created', 'updated', 'deleted', 'errors', 'note'];
 
   if (sheet.getLastRow() === 0) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    styleTab_(sheet, headers.length);
   }
 
   var rowValues = [

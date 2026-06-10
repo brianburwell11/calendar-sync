@@ -66,7 +66,12 @@ min) or when **Run now** is clicked:
 
 1. **`Config.js`** reads the `Mappings` tab into mapping objects and defines the shared
    constants: `CS_PROP` (the private-property keys), `SHEET` tab names, `DIRECTION`,
-   `COPY_MODE`, `SYNC_WINDOW`, `TRIGGER_EVERY_MINUTES`.
+   `COPY_MODE`, `SYNC_WINDOW`, `TRIGGER_EVERY_MINUTES`. It also has `refreshCalendarIds()`,
+   which rebuilds the `CalendarIds` lookup tab (name → id) from
+   `Calendar.CalendarList.list`. On `Mappings`, `Source`/`Destination` are name pickers and
+   `sourceCalId`/`destCalId` are `VLOOKUP` formulas resolving them against `CalendarIds`;
+   `getMappings()` is header-keyed and reads the resolved ids, so it is indifferent to
+   whether ids were typed or looked up — and to column order.
 2. **`Sync.js`** is the engine. `syncAll()` iterates enabled mappings (isolating per-mapping
    errors). `syncMapping()` lists source changes incrementally and applies them.
 3. **`State.js`** persists, per mapping, the Calendar API **sync token** plus last-run
