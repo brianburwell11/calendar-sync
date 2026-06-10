@@ -12,6 +12,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Setup (create tabs)', 'menuSetup')
     .addItem('Install schedule', 'menuInstallSchedule')
+    .addItem('Set schedule interval…', 'menuSetInterval')
     .addItem('Remove schedule', 'menuRemoveSchedule')
     .addSeparator()
     .addItem('Reset all sync tokens (full re-sync)', 'menuResetTokens')
@@ -28,7 +29,33 @@ function menuRunNow() {
 function menuInstallSchedule() {
   installTrigger();
   SpreadsheetApp.getUi().alert('Schedule installed: sync runs every ' +
-    TRIGGER_EVERY_MINUTES + ' minutes.');
+    getTriggerMinutes() + ' minutes.');
+}
+
+/**
+ * Prompt for and persist the schedule interval. If a schedule is already
+ * installed it is reinstalled at the new cadence immediately.
+ */
+function menuSetInterval() {
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.prompt('Set schedule interval',
+    'Sync currently runs every ' + getTriggerMinutes() + ' minutes.\n\n' +
+    'Enter a new interval in minutes. Allowed values:\n' +
+    VALID_TRIGGER_MINUTES.join(', ') + '.',
+    ui.ButtonSet.OK_CANCEL);
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+
+  var minutes = parseInt(resp.getResponseText().trim(), 10);
+  try {
+    setTriggerMinutes(minutes);
+  } catch (e) {
+    ui.alert(e.message);
+    return;
+  }
+
+  ui.alert(hasTrigger()
+    ? 'Interval set to ' + minutes + ' minutes. The active schedule was updated.'
+    : 'Interval set to ' + minutes + ' minutes. Click "Install schedule" to start it.');
 }
 
 function menuRemoveSchedule() {

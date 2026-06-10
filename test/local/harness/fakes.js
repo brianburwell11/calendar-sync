@@ -253,6 +253,7 @@ function makeFakeScriptApp() {
         every: null,
         timeBased: function () { return builder; },
         everyMinutes: function (m) { builder.every = m; return builder; },
+        everyHours: function (h) { builder.every = h * 60; return builder; },
         create: function () {
           const t = { handler: fn, everyMinutes: builder.every, getHandlerFunction: function () { return fn; } };
           triggers.push(t);
