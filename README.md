@@ -23,11 +23,100 @@ one of its own copies. See the architecture overview in `CLAUDE.md`.
 Mirrored events **never copy attendees and never send invitations**, so syncing can't
 email org members.
 
-## One-time setup
+## Setup & install (browser only — nothing to install)
 
-1. **Create a Google Sheet** — this will hold the config and become the script's container.
-2. **Install clasp and authorize:**
+You do **not** need git, Node, npm, or any developer tools. Everything below happens
+in your web browser with a normal Google account. It takes about 10 minutes.
+
+### Step 1 — Create the Google Sheet
+
+1. Go to **[sheets.new](https://sheets.new)** (or Google Drive → **New → Google Sheets**).
+2. Give it a name like **Calendar Sync**. This Sheet will hold your settings and status.
+
+### Step 2 — Open the built-in script editor
+
+In the Sheet, click the **Extensions** menu → **Apps Script**. A new browser tab opens with
+an empty project. This project is now permanently attached to your Sheet — there is nothing
+to "connect" or install.
+
+### Step 3 — Download the code from GitHub
+
+1. Go to the project's GitHub page —
+   **[github.com/brianburwell11/calendar-sync](https://github.com/brianburwell11/calendar-sync)** —
+   and click the green **`< > Code`** button → **Download ZIP**.
+   (Direct link: **[download the ZIP](https://github.com/brianburwell11/calendar-sync/archive/refs/heads/main.zip)**.)
+2. Find the downloaded `.zip` in your Downloads folder and **double-click it to unzip**.
+   You'll get a folder containing a `src` folder (the code) and an `appsscript.json` file
+   (the settings).
+
+### Step 4 — Copy the code files into the editor
+
+The editor needs **7 code files**. They are the files inside the `src` folder: `Config.js`,
+`Sync.js`, `State.js`, `EventCopy.js`, `Log.js`, `Menu.js`, and `Triggers.js`. To open any of
+them, right-click the file → **Open With → TextEdit** (Mac) or **Notepad** (Windows), then
+select all and copy.
+
+In the Apps Script editor (left sidebar, under **Files**):
+
+1. There's already a file named **`Code.gs`**. Hover it, click the **⋮** → **Rename**, and
+   name it **`Config`** (the editor adds `.gs` for you). Delete whatever sample code is in
+   it, then paste in the contents of **`Config.js`**.
+2. For each of the other six files, click the **`+`** next to **Files** → **Script**, type
+   the name (e.g. **`Sync`**), and paste in the contents of the matching `src` file.
+3. *(Optional but handy)* Add one more script file named **`manual`** and paste in the
+   contents of **`test/manual.js`** from the unzipped folder. It adds a `listMyCalendars`
+   helper used below to find calendar IDs.
+
+> File order and names-with-`.gs` don't matter — Apps Script merges all the code together.
+
+### Step 5 — Add the settings file (turns on Calendar access)
+
+1. In the editor, click the **gear icon** (⚙ **Project Settings**) in the left sidebar.
+2. Check **"Show `appsscript.json` manifest file in editor"**.
+3. Go back to **Files** (the `< >` icon). You'll now see **`appsscript.json`**. Click it,
+   select all, delete it, and paste in the contents of the **`appsscript.json`** file from
+   the unzipped folder. This turns on the Calendar service and the needed permissions.
+4. *(Optional)* In that file, change `"timeZone"` to your own, e.g.
+   `"America/Los_Angeles"`, so timestamps in the Log/State tabs show in your local time.
+5. Click the **Save** icon (💾), or press **Ctrl/Cmd + S**.
+
+### Step 6 — Set up and authorize from the Sheet
+
+1. Switch back to your **Sheet** browser tab and **reload the page**.
+2. A new **Calendar Sync** menu appears (to the right of **Help**). If it's not there yet,
+   wait a few seconds and reload again.
+3. Click **Calendar Sync → Setup (create tabs)**. The first time, Google asks you to
+   **authorize**: choose your account and click **Allow**. Because this is your own private
+   script, you may see an "unverified app" warning — click **Advanced → Go to … (unsafe)**
+   to continue. (It's "unsafe" only because Google hasn't reviewed your personal script; the
+   code never emails anyone or shares data.)
+4. This creates the **`Mappings`**, **`State`**, and **`Log`** tabs plus one sample row.
+
+### Step 7 — Configure your sync
+
+1. Fill in the **`Mappings`** tab (columns explained below). Use **`primary`** as
+   `destCalId` for your main calendar.
+   - To find a calendar's id: run **`listMyCalendars`** from the editor (pick it in the
+     function dropdown and click **Run**), or open the calendar's **Settings** page in
+     Google Calendar and copy the *Calendar ID*.
+2. Set **`enabled` = `TRUE`** on the rows you want to sync.
+3. Click **Calendar Sync → Run now** for the first sync.
+4. Click **Calendar Sync → Install schedule** to start the automatic recurring sync.
+   Use **Set schedule interval…** to change how often it runs.
+
+You're done — the sync now runs on its own in the background, even when your computer and
+the Sheet are closed.
+
+## For developers: install with clasp
+
+If you have Node.js installed and prefer command-line workflow, you can push the code with
+[`clasp`](https://github.com/google/clasp) instead of copy-pasting:
+
+1. **Create a Google Sheet** to act as the container.
+2. **Clone the repo and install clasp, then authorize:**
    ```bash
+   git clone git@github.com:brianburwell11/calendar-sync.git
+   cd calendar-sync
    npm install
    npx clasp login
    ```
@@ -42,14 +131,7 @@ email org members.
    npx clasp push
    ```
    The `appsscript.json` manifest enables the Advanced Calendar Service automatically.
-5. **Authorize & configure in the Sheet:** reload the Sheet, then use the **Calendar Sync**
-   menu:
-   - **Setup (create tabs)** — creates `Mappings` / `State` / `Log` and a sample row.
-   - Fill `Mappings`. Use `primary` as `destCalId` for your main calendar. Get calendar
-     ids from the `listMyCalendars` function (editor) or each calendar's settings page.
-   - Set `enabled = TRUE` on rows you want.
-   - **Run now** — first sync (you'll be prompted to grant Calendar access).
-   - **Install schedule** — start the recurring trigger.
+5. Then reload the Sheet and follow **Step 6–7** above to authorize and configure.
 
 ## Mappings columns
 
