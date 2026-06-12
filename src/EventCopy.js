@@ -62,7 +62,28 @@ function qualifies(src, mapping) {
   if (!passesTitleFilter_(src, mapping)) return false;
   if (mapping.busyOnly && !isBusy_(src)) return false;
   if (creatorExcluded_(src, mapping)) return false;
+  if (!passesAcceptedGate_(src, mapping)) return false;
   return true;
+}
+
+/**
+ * "Accepted only" gate. When mapping.acceptedOnly is set, an event the source
+ * calendar was *invited* to must have been accepted — invitations that are
+ * still awaiting a response (needsAction), tentative, or declined are skipped.
+ * Events the source calendar owns/created (no "self" attendee) are not
+ * invitations and always pass. The Calendar API marks the source calendar's own
+ * attendee entry with `self: true` and carries its RSVP in `responseStatus`.
+ * @return {boolean}
+ */
+function passesAcceptedGate_(src, mapping) {
+  if (!mapping.acceptedOnly) return true;
+  var attendees = (src && src.attendees) || [];
+  var me = null;
+  for (var i = 0; i < attendees.length; i++) {
+    if (attendees[i] && attendees[i].self) { me = attendees[i]; break; }
+  }
+  if (!me) return true; // not an invitation — nothing to accept
+  return me.responseStatus === 'accepted';
 }
 
 /**

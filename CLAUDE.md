@@ -79,8 +79,10 @@ min) or when **Run now** is clicked:
 3. **`State.js`** persists, per mapping, the Calendar API **sync token** plus last-run
    metadata in `ScriptProperties`, mirrored to the `State` tab.
 4. **`EventCopy.js`** builds the destination event payload and holds the source-event
-   predicates: `qualifies()` (combines the `filter`, `busyOnly`, and `excludeCreators`
-   mapping options), `isBusy_`, `creatorExcluded_`, and the `isOwnMirror` echo guard. An
+   predicates: `qualifies()` (combines the `filter`, `busyOnly`, `excludeCreators`, and
+   `acceptedOnly` mapping options), `isBusy_`, `creatorExcluded_`, `passesAcceptedGate_`
+   (skips invitations the source calendar's `self` attendee hasn't `accepted`), and the
+   `isOwnMirror` echo guard. An
    event that fails `qualifies()` is treated like a deletion (`applyDelete_`), so editing an
    event out of the qualifying set removes its existing copy on the next run.
    - **`copyMode: "invite"`** is the exception to "build a copy": instead of writing a

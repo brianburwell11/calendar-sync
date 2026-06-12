@@ -32,7 +32,7 @@ var MAPPING_HEADERS = [
   'Source', 'sourceCalId',
   'Destination', 'destCalId',
   'direction', 'copyMode', 'titlePrefix', 'overrideTitle', 'filter',
-  'busyOnly', 'excludeCreators', 'color',
+  'busyOnly', 'excludeCreators', 'color', 'acceptedOnly',
 ];
 
 /** Headers on the CalendarIds lookup tab (name → id). */
@@ -163,6 +163,9 @@ function getMappings() {
       m.color = String(m.color || '').trim();
       m.enabled = (m.enabled === true || String(m.enabled).trim().toUpperCase() === 'TRUE');
       m.busyOnly = (m.busyOnly === true || String(m.busyOnly).trim().toUpperCase() === 'TRUE');
+      // When TRUE, only mirror events the source calendar has *accepted* (skip
+      // invitations still awaiting a response, tentative, or declined).
+      m.acceptedOnly = (m.acceptedOnly === true || String(m.acceptedOnly).trim().toUpperCase() === 'TRUE');
       // Comma-separated list of emails to exclude, normalized to lowercase.
       m.excludeCreators = String(m.excludeCreators || '')
         .split(',')

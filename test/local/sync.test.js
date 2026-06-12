@@ -86,6 +86,29 @@ test('non-qualifying new event with no copy: nothing created or deleted', () => 
   assert.equal(env.cal.live(DST).length, 0);
 });
 
+test('acceptedOnly: unaccepted invitation is skipped, then mirrored once accepted, then cleaned up', () => {
+  const { env, g, m } = setup({ acceptedOnly: true });
+  const me = (status) => [{ email: 'me@x.com', self: true, responseStatus: status }];
+
+  // Invited but not yet accepted -> not copied.
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: me('needsAction') }));
+  let r = g.syncMapping(m, false);
+  assert.equal(r.created, 0);
+  assert.equal(env.cal.live(DST).length, 0);
+
+  // Accept it -> copied.
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: me('accepted') }));
+  r = g.syncMapping(m, false);
+  assert.equal(r.created, 1);
+  assert.equal(env.cal.live(DST).length, 1);
+
+  // Later decline it -> existing copy removed (stale cleanup).
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: me('declined') }));
+  r = g.syncMapping(m, false);
+  assert.equal(r.deleted, 1);
+  assert.equal(env.cal.live(DST).length, 0);
+});
+
 test('echo guard: a source event carrying our stamp is skipped', () => {
   const { env, g, m } = setup();
   env.cal.seed(SRC, timedEvent({ id: 'e1', extendedProperties: { private: { csSourceEventId: 'origin' } } }));

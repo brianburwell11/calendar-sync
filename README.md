@@ -153,6 +153,7 @@ If you have Node.js installed and prefer command-line workflow, you can push the
 | `overrideTitle` | optional: if set, replaces every mirrored title with this text (source title ignored); `titlePrefix` still applies |
 | `filter` | optional: only mirror events whose title contains this text (matches the *source* title, even when overridden) |
 | `busyOnly` | `TRUE` = only mirror events that show as busy (skip free/transparent events) |
+| `acceptedOnly` | `TRUE` = only mirror events you've **accepted** — invitations you haven't responded to, marked tentative, or declined are skipped. Events you organize or that have no guests always count. (If you later decline an already-mirrored event, its copy is removed on the next run.) |
 | `excludeCreators` | optional comma-separated emails; skip events created or organized by these people |
 | `color` | optional event color for copies (`full`/`busy` modes). Pick a name from the dropdown or type a number `1`–`11`. Blank = the destination calendar's default color. Ignored by `invite` mode (which creates no copy to color). Accepted names: `Lavender` (1), `Sage` (2), `Grape` (3), `Flamingo` (4), `Banana` (5), `Tangerine` (6), `Peacock` (7), `Graphite` (8), `Blueberry` (9), `Basil` (10), `Tomato` (11). |
 

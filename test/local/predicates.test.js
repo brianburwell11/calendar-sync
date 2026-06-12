@@ -51,3 +51,35 @@ test('qualifies: each filter can independently veto', () => {
   assert.equal(g.qualifies(timedEvent({ transparency: 'transparent' }), mapping({ busyOnly: true })), false);
   assert.equal(g.qualifies(src, mapping({ excludeCreators: ['a@x.com'] })), false);
 });
+
+test('passesAcceptedGate_: off (default) passes regardless of RSVP', () => {
+  const g = gas();
+  const invited = timedEvent({ attendees: [{ email: 'me@x.com', self: true, responseStatus: 'needsAction' }] });
+  assert.equal(g.passesAcceptedGate_(invited, mapping({ acceptedOnly: false })), true);
+});
+
+test('passesAcceptedGate_: only accepted invitations pass when on', () => {
+  const g = gas();
+  const m = mapping({ acceptedOnly: true });
+  const self = (status) => timedEvent({ attendees: [{ email: 'me@x.com', self: true, responseStatus: status }] });
+  assert.equal(g.passesAcceptedGate_(self('accepted'), m), true);
+  assert.equal(g.passesAcceptedGate_(self('needsAction'), m), false);
+  assert.equal(g.passesAcceptedGate_(self('tentative'), m), false);
+  assert.equal(g.passesAcceptedGate_(self('declined'), m), false);
+});
+
+test('passesAcceptedGate_: non-invitations pass (no self attendee / no attendees)', () => {
+  const g = gas();
+  const m = mapping({ acceptedOnly: true });
+  assert.equal(g.passesAcceptedGate_(timedEvent(), m), true); // no attendees — your own event
+  // attendees present but none is "self" (e.g. you organize, others are invited)
+  const othersOnly = timedEvent({ attendees: [{ email: 'guest@x.com', responseStatus: 'needsAction' }] });
+  assert.equal(g.passesAcceptedGate_(othersOnly, m), true);
+});
+
+test('qualifies: acceptedOnly vetoes an unaccepted invitation', () => {
+  const g = gas();
+  const pending = timedEvent({ summary: 'Invite', attendees: [{ email: 'me@x.com', self: true, responseStatus: 'needsAction' }] });
+  assert.equal(g.qualifies(pending, mapping()), true);                       // gate off
+  assert.equal(g.qualifies(pending, mapping({ acceptedOnly: true })), false); // gate on
+});

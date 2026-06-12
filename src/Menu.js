@@ -116,7 +116,7 @@ function menuSetup() {
       'primary', '',
       'primary', '',
       DIRECTION.SOURCE_TO_DEST, COPY_MODE.FULL, '[Org A] ', '',
-      '', false, '', '',
+      '', false, '', '', false,
     ]);
     styleTab_(mappings, MAPPING_HEADERS.length);
     applyMappingsLayout_(mappings, calSheet);
@@ -156,6 +156,7 @@ var MAPPING_HEADER_NOTES = {
   9: 'optional prefix on copied titles',
   11: 'optional: only copy events whose title contain this text',
   14: 'optional: event color for copies (full/busy). A color name or 1-11. Blank = the destination calendar\'s default color. Ignored by invite mode.',
+  15: 'TRUE = only copy events the source calendar has accepted (skip invitations that are needsAction, tentative, or declined). Events you organize or that have no guests always pass.',
 };
 
 /**
@@ -190,6 +191,7 @@ function applyMappingsLayout_(mappingsSheet, calSheet) {
   // Checkboxes on the boolean columns.
   mappingsSheet.getRange(2, 2, LAST, 1).insertCheckboxes();  // enabled
   mappingsSheet.getRange(2, 12, LAST, 1).insertCheckboxes(); // busyOnly
+  mappingsSheet.getRange(2, 15, LAST, 1).insertCheckboxes(); // acceptedOnly
 
   // Dropdowns (render as chips; invalid entries rejected). Source/Destination
   // pull names from CalendarIds; direction/copyMode are fixed lists.

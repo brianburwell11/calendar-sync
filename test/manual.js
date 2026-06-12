@@ -39,6 +39,7 @@ function inspectMapping(mappingId) {
   }
   console.log('Mapping "' + mapping.id + '" parsed filters:');
   console.log('  filter="' + mapping.filter + '"  busyOnly=' + mapping.busyOnly +
+    '  acceptedOnly=' + mapping.acceptedOnly +
     '  excludeCreators=' + JSON.stringify(mapping.excludeCreators));
   if (!mapping.excludeCreators.length) {
     console.log('  NOTE: excludeCreators is empty. Check that the Mappings tab has a ' +
@@ -64,6 +65,7 @@ function inspectMapping(mappingId) {
     if (!passesTitleFilter_(src, mapping)) reasons.push('title');
     if (mapping.busyOnly && !isBusy_(src)) reasons.push('free');
     if (creatorExcluded_(src, mapping)) reasons.push('excludedCreator');
+    if (!passesAcceptedGate_(src, mapping)) reasons.push('notAccepted');
     var verdict = reasons.length ? 'SKIP' : 'MIRROR';
     console.log(verdict + ' | "' + (src.summary || '(no title)') + '"' +
       ' | creator=' + creator + ' organizer=' + organizer +
