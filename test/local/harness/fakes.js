@@ -30,7 +30,7 @@ function makeFakeCalendar() {
   let idSeq = 0;
 
   function cal(calId) {
-    if (!cals.has(calId)) cals.set(calId, { events: new Map(), version: 0, expire: false, fail: false, accessRole: 'owner' });
+    if (!cals.has(calId)) cals.set(calId, { events: new Map(), version: 0, expire: false, fail: false });
     return cals.get(calId);
   }
   function bump(c, ev) { c.version += 1; ev._version = c.version; }
@@ -102,20 +102,13 @@ function makeFakeCalendar() {
         return {};
       },
       // Merge the provided fields into the stored event (used by invite mode to
-      // add/remove an attendee on the source event, or set a colorId on the
-      // destination's copy).
+      // add/remove an attendee on the source event).
       patch: function (resource, calId, eventId, opts) {
         const c = cal(calId);
         const ev = c.events.get(eventId);
         if (!ev) throw new Error('Event not found: ' + eventId);
         Object.assign(ev, clone(resource));
         bump(c, ev);
-        return clone(ev);
-      },
-      get: function (calId, eventId) {
-        const c = cal(calId);
-        const ev = c.events.get(eventId);
-        if (!ev) throw new Error('Not Found: ' + eventId);
         return clone(ev);
       },
     },
@@ -130,12 +123,9 @@ function makeFakeCalendar() {
       list: function () {
         return {
           items: Array.from(cals.keys()).map(function (id) {
-            return { id: id, summary: id, accessRole: cal(id).accessRole };
+            return { id: id, summary: id, accessRole: 'owner' };
           }),
         };
-      },
-      get: function (calId) {
-        return { id: calId, summary: calId, accessRole: cal(calId).accessRole };
       },
     },
   };
@@ -163,8 +153,6 @@ function makeFakeCalendar() {
     expireToken: function (calId) { cal(calId).expire = true; },
     /** Make every list on this calendar throw (to test error isolation). */
     failList: function (calId) { cal(calId).fail = true; },
-    /** Set the account's access role on a calendar (owner|writer|reader|freeBusyReader). */
-    setAccessRole: function (calId, role) { cal(calId).accessRole = role; },
   };
 
   return { Calendar: Calendar, helpers: helpers };

@@ -155,7 +155,7 @@ var MAPPING_HEADER_NOTES = {
   8: 'full (details, no attendees), busy (opaque "Busy" block), or invite (add the Destination calendar as an attendee on the source event — no copy)',
   9: 'optional prefix on copied titles',
   11: 'optional: only copy events whose title contain this text',
-  14: 'optional: event color. A color name or 1-11. Blank = the destination calendar\'s default color. full/busy: colors the copy. invite: colors your own copy on the destination (needs edit access there).',
+  14: 'optional: event color for copies (full/busy). A color name or 1-11. Blank = the destination calendar\'s default color. Ignored by invite mode.',
   15: 'TRUE = only copy events the source calendar has accepted (skip invitations that are needsAction, tentative, or declined). Events you organize or that have no guests always pass.',
 };
 

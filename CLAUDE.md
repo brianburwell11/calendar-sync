@@ -92,12 +92,6 @@ min) or when **Run now** is clicked:
      attendee list itself is the state — no stamp, no `findCopy_`. `"primary"` is resolved
      to the account email (`inviteeEmail_` → `Calendar.Calendars.get`). It needs write
      access to the source calendar and still passes `sendUpdates: "none"`.
-   - If a `color` is set and the account can edit the destination (`canEditCalendar_`),
-     invite mode also colors the destination's *own* copy of the invited event
-     (`applyInviteColor_` patches `colorId` on `destCalId` by the shared event id). colorId
-     is per-calendar, so this never affects the organizer/other guests. The copy may not
-     have propagated on the first invite; it self-heals next sync (the source patch makes
-     the event reappear in the delta).
 5. **`Log.js`** appends run rows to the `Log` tab.
 6. **`Menu.js`** (`onOpen`) is the in-Sheet control surface; **`Triggers.js`** installs/
    removes the time-driven trigger.

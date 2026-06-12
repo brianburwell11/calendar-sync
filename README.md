@@ -148,14 +148,14 @@ If you have Node.js installed and prefer command-line workflow, you can push the
 | `Destination` | the calendar to mirror **to**, picked by name (use `primary` for your main calendar) |
 | `destCalId` | **auto-filled** — `VLOOKUP` of the `Destination` name to its id |
 | `direction` | `source_to_dest` (only one implemented) |
-| `copyMode` | `full` (details, no attendees), `busy` (opaque "Busy" block), or `invite` (no copy — adds the Destination calendar as an attendee on the **source** event, so the event shows on the destination directly). `invite` requires write access to the Source calendar and never sends invitation emails. With a `color` set (and edit access to the Destination), `invite` also colors your copy of the event on the Destination. |
+| `copyMode` | `full` (details, no attendees), `busy` (opaque "Busy" block), or `invite` (no copy — adds the Destination calendar as an attendee on the **source** event, so the event shows on the destination directly). `invite` requires write access to the Source calendar and never sends invitation emails. |
 | `titlePrefix` | optional prefix on copied titles, e.g. `[Org A] ` |
 | `overrideTitle` | optional: if set, replaces every mirrored title with this text (source title ignored); `titlePrefix` still applies |
 | `filter` | optional: only mirror events whose title contains this text (matches the *source* title, even when overridden) |
 | `busyOnly` | `TRUE` = only mirror events that show as busy (skip free/transparent events) |
 | `acceptedOnly` | `TRUE` = only mirror events you've **accepted** — invitations you haven't responded to, marked tentative, or declined are skipped. Events you organize or that have no guests always count. (If you later decline an already-mirrored event, its copy is removed on the next run.) |
 | `excludeCreators` | optional comma-separated emails; skip events created or organized by these people |
-| `color` | optional event color. Pick a name from the dropdown or type a number `1`–`11`. Blank = the destination calendar's default color. For `full`/`busy` it colors the copy. For `invite` it colors **your own copy** of the invited event on the destination (only if you have edit access to that calendar) — the organizer and other guests are unaffected. Accepted names: `Lavender` (1), `Sage` (2), `Grape` (3), `Flamingo` (4), `Banana` (5), `Tangerine` (6), `Peacock` (7), `Graphite` (8), `Blueberry` (9), `Basil` (10), `Tomato` (11). |
+| `color` | optional event color for copies (`full`/`busy` modes). Pick a name from the dropdown or type a number `1`–`11`. Blank = the destination calendar's default color. Ignored by `invite` mode (which creates no copy to color). Accepted names: `Lavender` (1), `Sage` (2), `Grape` (3), `Flamingo` (4), `Banana` (5), `Tangerine` (6), `Peacock` (7), `Graphite` (8), `Blueberry` (9), `Basil` (10), `Tomato` (11). |
 
 Filters are evaluated on every sync: if you edit a source event so it stops qualifying
 (e.g. change it from busy to free, or rename it out of the `filter`), its existing copy on
