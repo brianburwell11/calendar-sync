@@ -101,6 +101,23 @@ function makeFakeCalendar() {
         if (ev) { ev.status = 'cancelled'; bump(c, ev); }
         return {};
       },
+      // Merge the provided fields into the stored event (used by invite mode to
+      // add/remove an attendee on the source event).
+      patch: function (resource, calId, eventId, opts) {
+        const c = cal(calId);
+        const ev = c.events.get(eventId);
+        if (!ev) throw new Error('Event not found: ' + eventId);
+        Object.assign(ev, clone(resource));
+        bump(c, ev);
+        return clone(ev);
+      },
+    },
+    Calendars: {
+      // Resolve a calendar id; 'primary' returns an email-like id, mirroring how
+      // the real API exposes the account's primary-calendar address.
+      get: function (calId) {
+        return { id: calId === 'primary' ? 'me@primary.example' : calId };
+      },
     },
     CalendarList: {
       list: function () {
@@ -151,6 +168,7 @@ function makeFakeSheet(name) {
   const hiddenCols = [];  // 1-based column indexes hidden
   const checkboxCols = []; // columns where checkboxes were inserted
   const notes = {};       // 'r,c' -> note text
+  const validations = {}; // 1-based column -> data-validation rule applied to it
   const sheet = {
     name: name,
     data: data,
@@ -192,11 +210,16 @@ function makeFakeSheet(name) {
     },
     _addCheckboxes: function (c) { checkboxCols.push(c); },
     _setNote: function (r, c, t) { notes[r + ',' + c] = t; },
+    _setValidation: function (c, n, rule) {
+      const k = n || 1;
+      for (let i = 0; i < k; i++) validations[c + i] = rule;
+    },
     // Test-only accessors:
     _colWidths: colWidths,
     _hiddenColumns: hiddenCols,
     _checkboxCols: checkboxCols,
     _notes: notes,
+    _validations: validations,
   };
   return sheet;
 }
@@ -214,7 +237,7 @@ function makeFakeRange(sheet, row, col, numRows, numCols) {
         for (let c = 0; c < numCols; c++) sheet._set(row + r, col + c, f);
       return range;
     },
-    setDataValidation: function () { return range; },
+    setDataValidation: function (rule) { sheet._setValidation(col, numCols, rule); return range; },
     setNote: function (t) { sheet._setNote(row, col, t); return range; },
     insertCheckboxes: function () { sheet._addCheckboxes(col); return range; },
     setFontFamily: function () { return range; },
@@ -262,11 +285,12 @@ function makeFakeSpreadsheet(initialSheets) {
     getActive: function () { return ss; },
     getUi: function () { return ui; },
     newDataValidation: function () {
+      const rule = { inList: null, inRange: null, allowInvalid: null };
       const b = {
-        requireValueInRange: function () { return b; },
-        requireValueInList: function () { return b; },
-        setAllowInvalid: function () { return b; },
-        build: function () { return {}; },
+        requireValueInRange: function (rng, showDropdown) { rule.inRange = rng; return b; },
+        requireValueInList: function (vals, showDropdown) { rule.inList = vals; return b; },
+        setAllowInvalid: function (v) { rule.allowInvalid = v; return b; },
+        build: function () { return rule; },
       };
       return b;
     },

@@ -77,6 +77,28 @@ test('menuSetup lays out the Mappings tab: hidden id columns, checkboxes, widths
   assert.equal(m._notes['1,6'], 'primary = main calendar');
 });
 
+test('menuSetup builds the copyMode dropdown with full, busy, and invite', () => {
+  const env = makeEnv();
+  const g = loadGas(env.globals);
+  g.menuSetup();
+  const m = env.ss.ss.getSheetByName('Mappings');
+  const copyModeCol = g.MAPPING_HEADERS.indexOf('copyMode') + 1; // 1-based
+  const rule = m._validations[copyModeCol];
+  assert.ok(rule, 'copyMode column has a data-validation rule');
+  assert.deepEqual(rule.inList, [g.COPY_MODE.FULL, g.COPY_MODE.BUSY, g.COPY_MODE.INVITE]);
+});
+
+test('menuSetup builds the direction dropdown from the implemented directions', () => {
+  const env = makeEnv();
+  const g = loadGas(env.globals);
+  g.menuSetup();
+  const m = env.ss.ss.getSheetByName('Mappings');
+  const directionCol = g.MAPPING_HEADERS.indexOf('direction') + 1; // 1-based
+  const rule = m._validations[directionCol];
+  assert.ok(rule, 'direction column has a data-validation rule');
+  assert.deepEqual(rule.inList, [g.DIRECTION.SOURCE_TO_DEST]);
+});
+
 test('menuSetup adds a conditional-format rule to grey out disabled rows', () => {
   const env = makeEnv();
   const g = loadGas(env.globals);

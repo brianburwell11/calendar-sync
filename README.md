@@ -148,7 +148,7 @@ If you have Node.js installed and prefer command-line workflow, you can push the
 | `Destination` | the calendar to mirror **to**, picked by name (use `primary` for your main calendar) |
 | `destCalId` | **auto-filled** — `VLOOKUP` of the `Destination` name to its id |
 | `direction` | `source_to_dest` (only one implemented) |
-| `copyMode` | `full` (details, no attendees) or `busy` (opaque "Busy" block) |
+| `copyMode` | `full` (details, no attendees), `busy` (opaque "Busy" block), or `invite` (no copy — adds the Destination calendar as an attendee on the **source** event, so the event shows on the destination directly). `invite` requires write access to the Source calendar and never sends invitation emails. |
 | `titlePrefix` | optional prefix on copied titles, e.g. `[Org A] ` |
 | `overrideTitle` | optional: if set, replaces every mirrored title with this text (source title ignored); `titlePrefix` still applies |
 | `filter` | optional: only mirror events whose title contains this text (matches the *source* title, even when overridden) |

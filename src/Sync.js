@@ -136,6 +136,11 @@ function baseListOpts_(token) {
 
 /** Create or update the destination copy for a source event. */
 function applyUpsert_(mapping, src, dryRun, result) {
+  if (mapping.copyMode === COPY_MODE.INVITE) {
+    inviteUpsert_(mapping, src, dryRun, result);
+    return;
+  }
+
   var existing = findCopy_(mapping.destCalId, src.id, mapping.id);
   var resource = buildCopyResource(src, mapping);
 
@@ -154,12 +159,76 @@ function applyUpsert_(mapping, src, dryRun, result) {
 
 /** Delete the destination copy for a cancelled source event, if present. */
 function applyDelete_(mapping, src, dryRun, result) {
+  if (mapping.copyMode === COPY_MODE.INVITE) {
+    inviteRemove_(mapping, src, dryRun, result);
+    return;
+  }
+
   var existing = findCopy_(mapping.destCalId, src.id, mapping.id);
   if (!existing) return;
   if (!dryRun) {
     Calendar.Events.remove(mapping.destCalId, existing.id, { sendUpdates: 'none' });
   }
   result.deleted++;
+}
+
+/**
+ * Invite mode: ensure the destination calendar is an attendee on the SOURCE
+ * event, so the event surfaces on the destination calendar without a separate
+ * mirrored copy. Idempotent — does nothing if already invited. Always passes
+ * sendUpdates:'none', so adding the attendee never emails the org's other
+ * guests (preserving the "syncing can't email org members" invariant).
+ */
+function inviteUpsert_(mapping, src, dryRun, result) {
+  var email = inviteeEmail_(mapping.destCalId);
+  var attendees = src.attendees || [];
+  if (hasAttendee_(attendees, email)) return; // already invited — nothing to do
+  if (!dryRun) {
+    Calendar.Events.patch({ attendees: attendees.concat([{ email: email }]) },
+      mapping.sourceCalId, src.id, { sendUpdates: 'none' });
+  }
+  result.created++;
+}
+
+/**
+ * Invite-mode counterpart to the copy delete: drop the destination calendar
+ * from the source event's attendees when the event no longer qualifies. A
+ * cancelled source event needs no cleanup — it (and its attendee list) is gone.
+ */
+function inviteRemove_(mapping, src, dryRun, result) {
+  if (src.status === 'cancelled') return;
+  var email = inviteeEmail_(mapping.destCalId);
+  var attendees = src.attendees || [];
+  if (!hasAttendee_(attendees, email)) return;
+  if (!dryRun) {
+    var remaining = attendees.filter(function (a) { return !sameEmail_(a.email, email); });
+    Calendar.Events.patch({ attendees: remaining },
+      mapping.sourceCalId, src.id, { sendUpdates: 'none' });
+  }
+  result.deleted++;
+}
+
+/**
+ * Resolve a destination calendar id to the email used as an attendee. The
+ * "primary" alias is not a real address, so it's resolved to the account's
+ * actual primary-calendar id (its email) via the Calendar API.
+ * @return {string}
+ */
+function inviteeEmail_(destCalId) {
+  if (String(destCalId).toLowerCase() === 'primary') {
+    return Calendar.Calendars.get('primary').id;
+  }
+  return destCalId;
+}
+
+/** @return {boolean} whether `email` is already in the attendee list. */
+function hasAttendee_(attendees, email) {
+  return (attendees || []).some(function (a) { return sameEmail_(a.email, email); });
+}
+
+/** Case-insensitive email comparison. @return {boolean} */
+function sameEmail_(a, b) {
+  return String(a || '').toLowerCase() === String(b || '').toLowerCase();
 }
 
 /**

@@ -44,8 +44,9 @@ var DIRECTION = {
 };
 
 var COPY_MODE = {
-  FULL: 'full',   // copy title/description/location/time, but never attendees
-  BUSY: 'busy',   // opaque block titled "Busy", no details
+  FULL: 'full',     // copy title/description/location/time, but never attendees
+  BUSY: 'busy',     // opaque block titled "Busy", no details
+  INVITE: 'invite', // no copy: add the Destination calendar as an attendee on the source event
 };
 
 /** Full-sync window relative to "now" when there is no sync token yet. */

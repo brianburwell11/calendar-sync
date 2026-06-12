@@ -152,7 +152,7 @@ var MAPPING_HEADER_NOTES = {
   2: 'whether or not to run this sync rule',
   6: 'primary = main calendar',
   7: 'source_to_dest',
-  8: 'full (details, no attendees) or busy (opaque "Busy" block)',
+  8: 'full (details, no attendees), busy (opaque "Busy" block), or invite (add the Destination calendar as an attendee on the source event — no copy)',
   9: 'optional prefix on copied titles',
   11: 'optional: only copy events whose title contain this text',
 };
@@ -206,7 +206,7 @@ function applyMappingsLayout_(mappingsSheet, calSheet) {
   mappingsSheet.getRange(2, 7, LAST, 1).setDataValidation(directionRule);
 
   var copyModeRule = SpreadsheetApp.newDataValidation()
-    .requireValueInList([COPY_MODE.FULL, COPY_MODE.BUSY], true)
+    .requireValueInList([COPY_MODE.FULL, COPY_MODE.BUSY, COPY_MODE.INVITE], true)
     .setAllowInvalid(false)
     .build();
   mappingsSheet.getRange(2, 8, LAST, 1).setDataValidation(copyModeRule);

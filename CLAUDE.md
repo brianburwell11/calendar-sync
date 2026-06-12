@@ -81,6 +81,13 @@ min) or when **Run now** is clicked:
    mapping options), `isBusy_`, `creatorExcluded_`, and the `isOwnMirror` echo guard. An
    event that fails `qualifies()` is treated like a deletion (`applyDelete_`), so editing an
    event out of the qualifying set removes its existing copy on the next run.
+   - **`copyMode: "invite"`** is the exception to "build a copy": instead of writing a
+     destination event, `Sync.js`'s `inviteUpsert_`/`inviteRemove_` **patch the source
+     event** to add (or remove) the destination calendar as an attendee, so the event
+     surfaces on the destination without a mirror. It reuses `qualifies()` and the
+     attendee list itself is the state — no stamp, no `findCopy_`. `"primary"` is resolved
+     to the account email (`inviteeEmail_` → `Calendar.Calendars.get`). It needs write
+     access to the source calendar and still passes `sendUpdates: "none"`.
 5. **`Log.js`** appends run rows to the `Log` tab.
 6. **`Menu.js`** (`onOpen`) is the in-Sheet control surface; **`Triggers.js`** installs/
    removes the time-driven trigger.
@@ -105,6 +112,8 @@ min) or when **Run now** is clicked:
 
 - Mirrored events **never copy attendees** and always pass `sendUpdates: "none"`, so syncing
   cannot email org members. `copyMode: "busy"` copies only an opaque "Busy" block.
+  `copyMode: "invite"` adds exactly one attendee — the destination calendar — to the source
+  event, but likewise with `sendUpdates: "none"`, so the org's other guests are never emailed.
 - `dryRun` paths must never write events **and never persist a sync token** — preserve this
   when editing `syncMapping`/`pageThrough_`, or previews would silently consume changes.
 
