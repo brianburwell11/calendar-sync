@@ -99,6 +99,18 @@ test('menuSetup builds the direction dropdown from the implemented directions', 
   assert.deepEqual(rule.inList, [g.DIRECTION.SOURCE_TO_DEST]);
 });
 
+test('menuSetup builds the color dropdown from the named event colors', () => {
+  const env = makeEnv();
+  const g = loadGas(env.globals);
+  g.menuSetup();
+  const m = env.ss.ss.getSheetByName('Mappings');
+  const colorCol = g.MAPPING_HEADERS.indexOf('color') + 1; // 1-based
+  const rule = m._validations[colorCol];
+  assert.ok(rule, 'color column has a data-validation rule');
+  assert.deepEqual(rule.inList, g.EVENT_COLOR_NAMES);
+  assert.equal(rule.allowInvalid, true); // blank/numeric ids still accepted
+});
+
 test('menuSetup adds a conditional-format rule to grey out disabled rows', () => {
   const env = makeEnv();
   const g = loadGas(env.globals);

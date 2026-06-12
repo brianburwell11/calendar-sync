@@ -385,6 +385,7 @@ function mapping(overrides) {
     filter: '',
     busyOnly: false,
     excludeCreators: [],
+    color: '',
   }, overrides || {});
 }
 

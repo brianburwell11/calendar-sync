@@ -32,7 +32,7 @@ var MAPPING_HEADERS = [
   'Source', 'sourceCalId',
   'Destination', 'destCalId',
   'direction', 'copyMode', 'titlePrefix', 'overrideTitle', 'filter',
-  'busyOnly', 'excludeCreators',
+  'busyOnly', 'excludeCreators', 'color',
 ];
 
 /** Headers on the CalendarIds lookup tab (name → id). */
@@ -48,6 +48,47 @@ var COPY_MODE = {
   BUSY: 'busy',     // opaque block titled "Busy", no details
   INVITE: 'invite', // no copy: add the Destination calendar as an attendee on the source event
 };
+
+/**
+ * Google Calendar event colors: friendly name -> Calendar API `colorId`. These
+ * are the eleven colors the API's Colors.event endpoint defines, so the
+ * Mappings tab can pick a copy's color by name. The numeric ids "1"–"11" are
+ * also accepted directly. A blank/unknown value leaves colorId unset, so the
+ * copy takes the destination calendar's default event color.
+ */
+var EVENT_COLORS = {
+  lavender: '1',
+  sage: '2',
+  grape: '3',
+  flamingo: '4',
+  banana: '5',
+  tangerine: '6',
+  peacock: '7',
+  graphite: '8',
+  blueberry: '9',
+  basil: '10',
+  tomato: '11',
+};
+
+/** The color names in id order, for the Mappings `color` dropdown. */
+var EVENT_COLOR_NAMES = [
+  'Lavender', 'Sage', 'Grape', 'Flamingo', 'Banana', 'Tangerine',
+  'Peacock', 'Graphite', 'Blueberry', 'Basil', 'Tomato',
+];
+
+/**
+ * Resolve a user-entered color (a name like "Tomato" or a numeric id "1"–"11")
+ * to a Calendar API colorId string. Empty or unrecognized values return '',
+ * meaning "leave the color unset" (use the calendar's default event color).
+ * @return {string}
+ */
+function colorIdFor_(value) {
+  var v = String(value || '').trim().toLowerCase();
+  if (!v) return '';
+  if (EVENT_COLORS[v]) return EVENT_COLORS[v];   // by name
+  if (/^([1-9]|1[01])$/.test(v)) return v;        // by numeric id 1–11
+  return '';                                       // unknown -> default color
+}
 
 /** Full-sync window relative to "now" when there is no sync token yet. */
 var SYNC_WINDOW = {
@@ -117,6 +158,9 @@ function getMappings() {
       // When set, replaces every mirrored event's title (the source title is ignored).
       m.overrideTitle = String(m.overrideTitle || '');
       m.filter = String(m.filter || '').trim();
+      // Optional event color for copies (full/busy); resolved to a Calendar
+      // colorId at build time. Blank/unknown -> the calendar's default color.
+      m.color = String(m.color || '').trim();
       m.enabled = (m.enabled === true || String(m.enabled).trim().toUpperCase() === 'TRUE');
       m.busyOnly = (m.busyOnly === true || String(m.busyOnly).trim().toUpperCase() === 'TRUE');
       // Comma-separated list of emails to exclude, normalized to lowercase.

@@ -116,7 +116,7 @@ function menuSetup() {
       'primary', '',
       'primary', '',
       DIRECTION.SOURCE_TO_DEST, COPY_MODE.FULL, '[Org A] ', '',
-      '', false, '',
+      '', false, '', '',
     ]);
     styleTab_(mappings, MAPPING_HEADERS.length);
     applyMappingsLayout_(mappings, calSheet);
@@ -143,7 +143,7 @@ function menuSetup() {
  */
 var MAPPING_COL_WIDTHS = {
   1: 102, 2: 57, 3: 183, 4: 134, 5: 134, 6: 116,
-  7: 111, 8: 72, 9: 100, 10: 83, 11: 74, 13: 131,
+  7: 111, 8: 72, 9: 100, 10: 83, 11: 74, 13: 131, 14: 90,
 };
 
 /** Notes shown on the Mappings header cells (1-based column → text). */
@@ -155,6 +155,7 @@ var MAPPING_HEADER_NOTES = {
   8: 'full (details, no attendees), busy (opaque "Busy" block), or invite (add the Destination calendar as an attendee on the source event — no copy)',
   9: 'optional prefix on copied titles',
   11: 'optional: only copy events whose title contain this text',
+  14: 'optional: event color for copies (full/busy). A color name or 1-11. Blank = the destination calendar\'s default color. Ignored by invite mode.',
 };
 
 /**
@@ -210,6 +211,14 @@ function applyMappingsLayout_(mappingsSheet, calSheet) {
     .setAllowInvalid(false)
     .build();
   mappingsSheet.getRange(2, 8, LAST, 1).setDataValidation(copyModeRule);
+
+  // Color names as a dropdown; allow-invalid so a blank cell (= default color)
+  // or a raw numeric id ("1"–"11") is still accepted.
+  var colorRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(EVENT_COLOR_NAMES, true)
+    .setAllowInvalid(true)
+    .build();
+  mappingsSheet.getRange(2, 14, LAST, 1).setDataValidation(colorRule); // color
 
   // Header-cell notes.
   Object.keys(MAPPING_HEADER_NOTES).forEach(function (col) {

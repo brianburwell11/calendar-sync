@@ -70,3 +70,28 @@ test('all-day events: start.date passed through', () => {
   assert.deepEqual(r.start, { date: '2026-07-04' });
   assert.deepEqual(r.end, { date: '2026-07-05' });
 });
+
+test('color: a color name resolves to its Calendar colorId', () => {
+  const g = gas();
+  assert.equal(g.buildCopyResource(timedEvent(), mapping({ color: 'Tomato' })).colorId, '11');
+  assert.equal(g.buildCopyResource(timedEvent(), mapping({ color: 'lavender' })).colorId, '1'); // case-insensitive
+});
+
+test('color: a raw numeric id 1-11 passes through', () => {
+  const g = gas();
+  assert.equal(g.buildCopyResource(timedEvent(), mapping({ color: '5' })).colorId, '5');
+});
+
+test('color: blank or unknown leaves colorId unset (calendar default)', () => {
+  const g = gas();
+  assert.equal(g.buildCopyResource(timedEvent(), mapping({ color: '' })).colorId, undefined);
+  assert.equal(g.buildCopyResource(timedEvent(), mapping({ color: 'chartreuse' })).colorId, undefined);
+  assert.equal(g.buildCopyResource(timedEvent(), mapping({ color: '12' })).colorId, undefined); // out of range
+});
+
+test('color applies in busy mode too', () => {
+  const g = gas();
+  const r = g.buildCopyResource(timedEvent(), mapping({ copyMode: 'busy', color: 'Basil' }));
+  assert.equal(r.summary, 'Busy');
+  assert.equal(r.colorId, '10');
+});

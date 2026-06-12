@@ -71,7 +71,9 @@ min) or when **Run now** is clicked:
    `Calendar.CalendarList.list`. On `Mappings`, `Source`/`Destination` are name pickers and
    `sourceCalId`/`destCalId` are `VLOOKUP` formulas resolving them against `CalendarIds`;
    `getMappings()` is header-keyed and reads the resolved ids, so it is indifferent to
-   whether ids were typed or looked up — and to column order.
+   whether ids were typed or looked up — and to column order. `EVENT_COLORS` /
+   `colorIdFor_()` resolve the optional `color` column (a name like `Tomato` or a numeric
+   `colorId` `1`–`11`) to a Calendar `colorId`; blank/unknown leaves it unset (default color).
 2. **`Sync.js`** is the engine. `syncAll()` iterates enabled mappings (isolating per-mapping
    errors). `syncMapping()` lists source changes incrementally and applies them.
 3. **`State.js`** persists, per mapping, the Calendar API **sync token** plus last-run

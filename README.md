@@ -154,6 +154,7 @@ If you have Node.js installed and prefer command-line workflow, you can push the
 | `filter` | optional: only mirror events whose title contains this text (matches the *source* title, even when overridden) |
 | `busyOnly` | `TRUE` = only mirror events that show as busy (skip free/transparent events) |
 | `excludeCreators` | optional comma-separated emails; skip events created or organized by these people |
+| `color` | optional event color for copies (`full`/`busy` modes). Pick a name from the dropdown or type a number `1`–`11`. Blank = the destination calendar's default color. Ignored by `invite` mode (which creates no copy to color). Accepted names: `Lavender` (1), `Sage` (2), `Grape` (3), `Flamingo` (4), `Banana` (5), `Tangerine` (6), `Peacock` (7), `Graphite` (8), `Blueberry` (9), `Basil` (10), `Tomato` (11). |
 
 Filters are evaluated on every sync: if you edit a source event so it stops qualifying
 (e.g. change it from busy to free, or rename it out of the `filter`), its existing copy on

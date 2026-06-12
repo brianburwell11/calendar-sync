@@ -34,6 +34,11 @@ function buildCopyResource(src, mapping) {
     if (src.location) resource.location = src.location;
   }
 
+  // Optional event color. When unset, the copy uses the destination calendar's
+  // default color.
+  var colorId = colorIdFor_(mapping.color);
+  if (colorId) resource.colorId = colorId;
+
   // Preserve recurrence so recurring source events stay recurring on the copy.
   // (Events.list is called without singleEvents on incremental syncs, so the
   // master recurring event flows through with its recurrence rules.)
