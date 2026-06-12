@@ -97,3 +97,86 @@ test('invite: "primary" destination resolves to the account email as the attende
   g.syncMapping(m, false);
   assert.deepEqual(srcEvent(env, 'e1').attendees, [{ email: 'me@primary.example' }]);
 });
+
+// --- invite + color: color the destination's own copy of the invited event ---
+// The fake doesn't model invitation propagation, so tests seed a destination
+// event with the same id as the source event to stand in for the propagated copy.
+
+function dstEvent(env, id) {
+  return env.cal.all(DST).find(function (e) { return e.id === id; });
+}
+
+test('invite color: colors the destination copy when a color is set and dest is writable', () => {
+  const { env, g, m } = setup({ color: 'Tomato' });
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: [{ email: DST }] })); // already invited
+  env.cal.seed(DST, timedEvent({ id: 'e1' }));                              // propagated copy
+  const r = g.syncMapping(m, false);
+  assert.equal(r.created, 0);
+  assert.equal(r.updated, 1);
+  assert.equal(dstEvent(env, 'e1').colorId, '11');     // Tomato on the destination
+  assert.equal(srcEvent(env, 'e1').colorId, undefined); // source/organizer untouched
+});
+
+test('invite color: applies on the first invite too (attendee added + colored)', () => {
+  const { env, g, m } = setup({ color: 'Tomato' });
+  env.cal.seed(SRC, timedEvent({ id: 'e1' }));     // not yet invited
+  env.cal.seed(DST, timedEvent({ id: 'e1' }));     // copy already present
+  const r = g.syncMapping(m, false);
+  assert.equal(r.created, 1);                      // attendee added
+  assert.equal(dstEvent(env, 'e1').colorId, '11');
+});
+
+test('invite color: changing the mapping color re-patches the destination copy', () => {
+  const { env, g, m } = setup({ color: 'Sage' });
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: [{ email: DST }] }));
+  env.cal.seed(DST, timedEvent({ id: 'e1', colorId: '11' })); // was Tomato
+  const r = g.syncMapping(m, false);
+  assert.equal(r.updated, 1);
+  assert.equal(dstEvent(env, 'e1').colorId, '2'); // Sage
+});
+
+test('invite color: already-correct color is a no-op (no count)', () => {
+  const { env, g, m } = setup({ color: 'Tomato' });
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: [{ email: DST }] }));
+  env.cal.seed(DST, timedEvent({ id: 'e1', colorId: '11' }));
+  const r = g.syncMapping(m, false);
+  assert.deepEqual([r.created, r.updated, r.deleted], [0, 0, 0]);
+  assert.equal(dstEvent(env, 'e1').colorId, '11');
+});
+
+test('invite color: no edit access on the destination -> color not applied', () => {
+  const { env, g, m } = setup({ color: 'Tomato' });
+  env.cal.setAccessRole(DST, 'reader');
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: [{ email: DST }] }));
+  env.cal.seed(DST, timedEvent({ id: 'e1' }));
+  const r = g.syncMapping(m, false);
+  assert.equal(r.updated, 0);
+  assert.equal(dstEvent(env, 'e1').colorId, undefined);
+});
+
+test('invite color: blank color leaves the destination copy untouched', () => {
+  const { env, g, m } = setup({ color: '' });
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: [{ email: DST }] }));
+  env.cal.seed(DST, timedEvent({ id: 'e1', colorId: '11' }));
+  const r = g.syncMapping(m, false);
+  assert.deepEqual([r.created, r.updated, r.deleted], [0, 0, 0]);
+  assert.equal(dstEvent(env, 'e1').colorId, '11'); // not reset
+});
+
+test('invite color: a not-yet-propagated destination copy is skipped without error', () => {
+  const { env, g, m } = setup({ color: 'Tomato' });
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: [{ email: DST }] }));
+  // No DST copy seeded — getEvent_ returns null.
+  const r = g.syncMapping(m, false);
+  assert.equal(r.errors, 0);
+  assert.equal(r.updated, 0);
+});
+
+test('invite color dryRun: counts the would-be change but writes nothing', () => {
+  const { env, g, m } = setup({ color: 'Tomato' });
+  env.cal.seed(SRC, timedEvent({ id: 'e1', attendees: [{ email: DST }] }));
+  env.cal.seed(DST, timedEvent({ id: 'e1' }));
+  const r = g.syncMapping(m, true);
+  assert.equal(r.updated, 1);
+  assert.equal(dstEvent(env, 'e1').colorId, undefined); // no write
+});

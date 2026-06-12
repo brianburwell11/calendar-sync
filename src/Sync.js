@@ -43,6 +43,14 @@ function syncMapping(mapping, dryRun) {
     return result;
   }
 
+  // Invite mode can color the destination's copy of the invited event, but only
+  // when a color is configured and we have write access to the destination.
+  // Resolve both once per run (a single CalendarList.get) rather than per event.
+  if (mapping.copyMode === COPY_MODE.INVITE) {
+    mapping._inviteColorId = colorIdFor_(mapping.color);
+    mapping._destWritable = mapping._inviteColorId ? canEditCalendar_(mapping.destCalId) : false;
+  }
+
   var events = listSourceChanges_(mapping, dryRun, result);
 
   events.forEach(function (src) {
@@ -182,12 +190,72 @@ function applyDelete_(mapping, src, dryRun, result) {
 function inviteUpsert_(mapping, src, dryRun, result) {
   var email = inviteeEmail_(mapping.destCalId);
   var attendees = src.attendees || [];
-  if (hasAttendee_(attendees, email)) return; // already invited — nothing to do
-  if (!dryRun) {
-    Calendar.Events.patch({ attendees: attendees.concat([{ email: email }]) },
-      mapping.sourceCalId, src.id, { sendUpdates: 'none' });
+  var added = false;
+  if (!hasAttendee_(attendees, email)) {
+    if (!dryRun) {
+      Calendar.Events.patch({ attendees: attendees.concat([{ email: email }]) },
+        mapping.sourceCalId, src.id, { sendUpdates: 'none' });
+    }
+    added = true;
   }
-  result.created++;
+
+  var colored = applyInviteColor_(mapping, src, dryRun);
+
+  if (added) result.created++;
+  else if (colored) result.updated++; // color-only change on a later run
+}
+
+/**
+ * Color the destination calendar's own copy of an invited event. colorId is a
+ * per-calendar property, so patching it on the destination (with
+ * sendUpdates:'none') colors only the destination's view — the organizer and
+ * other guests are untouched. Only runs when a color is configured AND we have
+ * write access to the destination (both precomputed in syncMapping). Returns
+ * whether the color was (or, in dryRun, would be) changed.
+ *
+ * On the very first invite the destination's copy may not have propagated yet,
+ * so it's skipped here; adding the attendee bumps the source event, which
+ * reappears on the next incremental sync, where the copy exists and gets
+ * colored. Invited events share the same event id across calendars, so the
+ * destination copy is addressed by src.id; if it can't be read, color is
+ * silently skipped.
+ * @return {boolean}
+ */
+function applyInviteColor_(mapping, src, dryRun) {
+  var desired = mapping._inviteColorId;
+  if (!desired || !mapping._destWritable) return false;
+  var copy = getEvent_(mapping.destCalId, src.id);
+  if (!copy || copy.colorId === desired) return false;
+  if (!dryRun) {
+    Calendar.Events.patch({ colorId: desired }, mapping.destCalId, src.id, { sendUpdates: 'none' });
+  }
+  return true;
+}
+
+/**
+ * @return {boolean} whether the account can edit the calendar (accessRole owner
+ * or writer). False on any error (calendar not visible/listable).
+ */
+function canEditCalendar_(calId) {
+  try {
+    var role = Calendar.CalendarList.get(calId).accessRole;
+    return role === 'owner' || role === 'writer';
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Read an event, returning null instead of throwing when it isn't found or
+ * isn't accessible (e.g. an invited copy that hasn't propagated yet).
+ * @return {Object|null}
+ */
+function getEvent_(calId, eventId) {
+  try {
+    return Calendar.Events.get(calId, eventId);
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
