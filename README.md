@@ -126,7 +126,7 @@ If you have Node.js installed and prefer command-line workflow, you can push the
    ```
 3. **Create the bound Apps Script project** (run once, in this directory):
    ```bash
-   npx clasp create --type sheets --title "Calendar Sync"
+   npx clasp create --type sheets --title "Calendar Sync" --parentId <SHEET_ID>
    ```
    This writes `.clasp.json` (git-ignored). Alternatively copy `.clasp.json.example` to
    `.clasp.json` and paste an existing script id.
