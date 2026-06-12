@@ -75,7 +75,10 @@ min) or when **Run now** is clicked:
    `colorIdFor_()` resolve the optional `color` column (a name like `Tomato` or a numeric
    `colorId` `1`–`11`) to a Calendar `colorId`; blank/unknown leaves it unset (default color).
 2. **`Sync.js`** is the engine. `syncAll()` iterates enabled mappings (isolating per-mapping
-   errors). `syncMapping()` lists source changes incrementally and applies them.
+   errors). `syncMapping()` lists source changes incrementally and applies them. It skips
+   any mapping whose Source and Destination resolve to the **same calendar** (a
+   misconfiguration: copy modes would duplicate onto the same calendar and invite mode
+   would run a calendar against itself, e.g. `primary -> primary`).
 3. **`State.js`** persists, per mapping, the Calendar API **sync token** plus last-run
    metadata in `ScriptProperties`, mirrored to the `State` tab.
 4. **`EventCopy.js`** builds the destination event payload and holds the source-event

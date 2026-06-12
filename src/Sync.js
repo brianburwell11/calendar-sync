@@ -43,6 +43,14 @@ function syncMapping(mapping, dryRun) {
     return result;
   }
 
+  // Source == Destination is always a misconfiguration: copy modes would
+  // duplicate events onto the same calendar, and invite mode would process the
+  // calendar's entire event set against itself (e.g. primary -> primary). Skip.
+  if (mapping.sourceCalId && mapping.sourceCalId === mapping.destCalId) {
+    result.note = 'Skipped: source and destination are the same calendar (' + mapping.sourceCalId + ')';
+    return result;
+  }
+
   var events = listSourceChanges_(mapping, dryRun, result);
 
   events.forEach(function (src) {

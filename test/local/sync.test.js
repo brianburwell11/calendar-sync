@@ -22,6 +22,18 @@ test('unsupported direction is skipped with no API writes', () => {
   assert.equal(env.cal.live(DST).length, 0);
 });
 
+test('source == destination is skipped with no API writes', () => {
+  const { env, g, m } = setup({ sourceCalId: 'primary', destCalId: 'primary', copyMode: 'invite' });
+  env.cal.seed('primary', timedEvent({ id: 'e1' }));
+  const r = g.syncMapping(m, false);
+  assert.deepEqual([r.created, r.updated, r.deleted], [0, 0, 0]);
+  assert.match(r.note, /same calendar/);
+  // The source event is untouched (no attendee added, no color set).
+  const ev = env.cal.all('primary').find(function (e) { return e.id === 'e1'; });
+  assert.equal(ev.attendees, undefined);
+  assert.equal(ev.colorId, undefined);
+});
+
 test('create: a new source event is mirrored with stamps', () => {
   const { env, g, m } = setup();
   env.cal.seed(SRC, timedEvent({ id: 'e1', summary: 'Standup' }));
