@@ -92,9 +92,18 @@ min) or when **Run now** is clicked:
      destination event, `Sync.js`'s `inviteUpsert_`/`inviteRemove_` **patch the source
      event** to add (or remove) the destination calendar as an attendee, so the event
      surfaces on the destination without a mirror. It reuses `qualifies()` and the
-     attendee list itself is the state — no stamp, no `findCopy_`. `"primary"` is resolved
-     to the account email (`inviteeEmail_` → `Calendar.Calendars.get`). It needs write
-     access to the source calendar and still passes `sendUpdates: "none"`.
+     attendee list itself is the state — no `findCopy_`. When it adds the guest it also
+     stamps the source event with `CS_PROP.INVITED_BY = <mapping id>` (a private prop that
+     does *not* trip `isOwnMirror`, which keys on `csSourceEventId`). `"primary"` is
+     resolved to the account email (`inviteeEmail_` → `Calendar.Calendars.get`). It needs
+     write access to the source calendar and still passes `sendUpdates: "none"`.
+   - **Invite coloring** (`applyInviteColor_`): if a `color` is set and `canEditCalendar_`
+     allows, it patches `colorId` on the destination's *own* copy of the event (per-calendar,
+     so organizer/other guests are unaffected). It is scoped two ways — only events carrying
+     this mapping's `INVITED_BY` stamp are colored (never events the destination merely
+     already attended), and `syncMapping` skips any mapping where Source == Destination.
+     The destination copy may not have propagated on the first invite; coloring self-heals
+     on the next sync.
 5. **`Log.js`** appends run rows to the `Log` tab.
 6. **`Menu.js`** (`onOpen`) is the in-Sheet control surface; **`Triggers.js`** installs/
    removes the time-driven trigger.

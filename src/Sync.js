@@ -51,6 +51,14 @@ function syncMapping(mapping, dryRun) {
     return result;
   }
 
+  // Invite mode can color the destination's copy of events it invites, but only
+  // when a color is set and we can edit the destination. Resolve both once per
+  // run (a single CalendarList.get) rather than per event.
+  if (mapping.copyMode === COPY_MODE.INVITE) {
+    mapping._inviteColorId = colorIdFor_(mapping.color);
+    mapping._destWritable = mapping._inviteColorId ? canEditCalendar_(mapping.destCalId) : false;
+  }
+
   var events = listSourceChanges_(mapping, dryRun, result);
 
   events.forEach(function (src) {
@@ -183,19 +191,92 @@ function applyDelete_(mapping, src, dryRun, result) {
 /**
  * Invite mode: ensure the destination calendar is an attendee on the SOURCE
  * event, so the event surfaces on the destination calendar without a separate
- * mirrored copy. Idempotent — does nothing if already invited. Always passes
- * sendUpdates:'none', so adding the attendee never emails the org's other
- * guests (preserving the "syncing can't email org members" invariant).
+ * mirrored copy. When we add the guest we also stamp the source event with this
+ * mapping's id (CS_PROP.INVITED_BY) so coloring can be scoped to only the events
+ * this mapping invited. Always passes sendUpdates:'none', so adding the attendee
+ * never emails the org's other guests.
  */
 function inviteUpsert_(mapping, src, dryRun, result) {
   var email = inviteeEmail_(mapping.destCalId);
   var attendees = src.attendees || [];
-  if (hasAttendee_(attendees, email)) return; // already invited — nothing to do
-  if (!dryRun) {
-    Calendar.Events.patch({ attendees: attendees.concat([{ email: email }]) },
-      mapping.sourceCalId, src.id, { sendUpdates: 'none' });
+  var added = false;
+
+  if (!hasAttendee_(attendees, email)) {
+    var priv = withInviteStamp_(src, mapping.id);
+    if (!dryRun) {
+      Calendar.Events.patch(
+        { attendees: attendees.concat([{ email: email }]), extendedProperties: { private: priv } },
+        mapping.sourceCalId, src.id, { sendUpdates: 'none' });
+    }
+    // Reflect the stamp locally so applyInviteColor_ recognizes the event this run.
+    src.extendedProperties = src.extendedProperties || {};
+    src.extendedProperties.private = priv;
+    added = true;
   }
-  result.created++;
+
+  var colored = applyInviteColor_(mapping, src, dryRun);
+
+  if (added) result.created++;
+  else if (colored) result.updated++; // color-only change on a later run
+}
+
+/** Merge this mapping's INVITED_BY stamp into a copy of the source event's private props. */
+function withInviteStamp_(src, mappingId) {
+  var priv = (src.extendedProperties && src.extendedProperties.private) || {};
+  var merged = {};
+  Object.keys(priv).forEach(function (k) { merged[k] = priv[k]; });
+  merged[CS_PROP.INVITED_BY] = mappingId;
+  return merged;
+}
+
+/**
+ * Color the destination calendar's own copy of an event THIS mapping invited.
+ * colorId is per-calendar, so patching it on the destination (sendUpdates:'none')
+ * colors only the destination's view — organizer and other guests are untouched.
+ * Scoped two ways: only runs when a color is set AND we can edit the destination
+ * (precomputed), and only for events carrying this mapping's INVITED_BY stamp, so
+ * it never recolors events the destination merely already attended. The dest copy
+ * may not have propagated on the first invite; coloring self-heals on the next
+ * sync (the attendee/stamp patch makes the event reappear in the delta).
+ * @return {boolean} whether the color was (or, in dryRun, would be) changed.
+ */
+function applyInviteColor_(mapping, src, dryRun) {
+  var desired = mapping._inviteColorId;
+  if (!desired || !mapping._destWritable) return false;
+  var priv = (src.extendedProperties && src.extendedProperties.private) || {};
+  if (priv[CS_PROP.INVITED_BY] !== mapping.id) return false; // only events this mapping invited
+  var copy = getEvent_(mapping.destCalId, src.id);
+  if (!copy || copy.colorId === desired) return false;
+  if (!dryRun) {
+    Calendar.Events.patch({ colorId: desired }, mapping.destCalId, src.id, { sendUpdates: 'none' });
+  }
+  return true;
+}
+
+/**
+ * @return {boolean} whether the account can edit the calendar (accessRole owner
+ * or writer). False on any error (calendar not visible/listable).
+ */
+function canEditCalendar_(calId) {
+  try {
+    var role = Calendar.CalendarList.get(calId).accessRole;
+    return role === 'owner' || role === 'writer';
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Read an event, returning null instead of throwing when it isn't found or
+ * accessible (e.g. an invited copy that hasn't propagated to the destination yet).
+ * @return {Object|null}
+ */
+function getEvent_(calId, eventId) {
+  try {
+    return Calendar.Events.get(calId, eventId);
+  } catch (e) {
+    return null;
+  }
 }
 
 /**

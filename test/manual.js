@@ -81,6 +81,47 @@ function dryRunAll() {
   });
 }
 
+/**
+ * One-time cleanup: reset event colors back to the calendar default over the
+ * sync window. Optionally limit to a single colorId (e.g. "11" to undo only a
+ * Banana mishap, leaving other colors intact). Patches colorId to null, which
+ * the Calendar API treats as "use the calendar's default color". Writes nothing
+ * for events that already have no color. Run from the editor.
+ *
+ * Examples:
+ *   resetEventColors_("primary", "11")  // undo only Banana on your primary
+ *   resetEventColors_("primary")        // clear every event color on primary
+ *
+ * @param {string} calId            calendar id ("primary" or an address)
+ * @param {string=} onlyColorId     if set, only reset events with this colorId
+ */
+function resetEventColors_(calId, onlyColorId) {
+  var now = new Date();
+  var timeMin = new Date(now.getTime() - SYNC_WINDOW.PAST_DAYS * 86400000).toISOString();
+  var timeMax = new Date(now.getTime() + SYNC_WINDOW.FUTURE_DAYS * 86400000).toISOString();
+  var scanned = 0, cleared = 0, pageToken = null;
+
+  do {
+    var opts = {
+      timeMin: timeMin, timeMax: timeMax, singleEvents: true,
+      showDeleted: false, maxResults: 250,
+    };
+    if (pageToken) opts.pageToken = pageToken;
+    var resp = Calendar.Events.list(calId, opts);
+    (resp.items || []).forEach(function (ev) {
+      scanned++;
+      if (!ev.colorId) return;
+      if (onlyColorId && String(ev.colorId) !== String(onlyColorId)) return;
+      Calendar.Events.patch({ colorId: null }, calId, ev.id, { sendUpdates: 'none' });
+      cleared++;
+    });
+    pageToken = resp.nextPageToken || null;
+  } while (pageToken);
+
+  console.log('resetEventColors_(' + calId + (onlyColorId ? ', ' + onlyColorId : '') +
+    '): scanned ' + scanned + ', cleared ' + cleared + '.');
+}
+
 /** List the calendars the authorized account can see, with ids (for filling Mappings). */
 function listMyCalendars() {
   var cals = Calendar.CalendarList.list({ maxResults: 250 }).items || [];

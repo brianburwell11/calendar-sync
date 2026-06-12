@@ -10,6 +10,10 @@ var CS_PROP = {
   SOURCE: 'csSource',          // source calendar id the copy came from
   SOURCE_EVENT: 'csSourceEventId', // source event id
   MAPPING: 'csMapping',        // mapping id that produced the copy
+  // Stamped on a SOURCE event by invite mode: the mapping id that added the
+  // destination as a guest. Used to scope invite coloring to ONLY the events
+  // this mapping invited (never events the destination already attended).
+  INVITED_BY: 'csInvitedBy',
 };
 
 /** Sheet tab names. */
